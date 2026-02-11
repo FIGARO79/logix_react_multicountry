@@ -7,19 +7,17 @@ from fastapi import HTTPException
 
 # Importaciones de configuración del proyecto
 from app.core.config import (
-    ITEM_MASTER_CSV_PATH,
-    GRN_CSV_FILE_PATH,
+    DATABASE_FOLDER,
     COLUMNS_TO_READ_MASTER,
     COLUMNS_TO_READ_GRN
 )
+from app.utils.country import get_country_csv_path
 
-# --- Cache de DataFrames en memoria para este módulo ---
-# Nota: df_master_cache ya no se mantiene en memoria para ahorrar RAM.
-df_master_cache = None
-df_grn_cache = None
-master_qty_map = {}
-grn_file_mtime = None  # Timestamp del archivo GRN para detectar cambios
-master_file_mtime = None  # Timestamp del archivo Maestro para detectar cambios
+# --- Cache de DataFrames en memoria para este módulo (SEGMENTADO POR PAÍS) ---
+df_grn_cache = {}          # { 'MX': DataFrame, 'AR': DataFrame }
+master_qty_map = {}        # { 'MX': dict, 'AR': dict }
+grn_file_mtime = {}        # { 'MX': float, 'AR': float }
+master_file_mtime = {}     # { 'MX': float, 'AR': float }
 
 # --- Funciones de Manejo de CSV ---
 
@@ -41,206 +39,157 @@ async def read_csv_safe(file_path: str, columns: list = None):
         print(f"Error CSV: Error inesperado leyendo CSV {file_path}: {e}")
         return None
 
-async def load_csv_data():
+async def load_csv_data(country_code: str = "MX"):
     """
-    Carga (o recarga) los datos de los archivos CSV principales.
-    OPTIMIZACIÓN: Intenta cargar desde JSON cache primero, solo lee CSV si es necesario.
+    Carga (o recarga) los datos de los archivos CSV para un país específico.
     """
-    global df_master_cache, df_grn_cache, master_qty_map, grn_file_mtime, master_file_mtime
-    print("Cargando datos CSV en caché ligera...")
+    global df_grn_cache, master_qty_map, grn_file_mtime, master_file_mtime
+    
+    # Rutas segmentadas
+    item_master_path = get_country_csv_path(DATABASE_FOLDER, 'AURRSGLBD0250.csv', country_code)
+    grn_csv_path = get_country_csv_path(DATABASE_FOLDER, 'AURRSGLBD0280.csv', country_code)
+    
+    print(f"Cargando datos CSV para {country_code}...")
 
     # --- OPTIMIZACIÓN: Cargar master_qty_map desde JSON si existe y está actualizado ---
-    json_cache_path = os.path.join(os.path.dirname(ITEM_MASTER_CSV_PATH), 'stock_qty_cache.json')
-    csv_exists = os.path.exists(ITEM_MASTER_CSV_PATH)
+    json_cache_path = os.path.join(os.path.dirname(item_master_path), 'stock_qty_cache.json')
+    csv_exists = os.path.exists(item_master_path)
     json_exists = os.path.exists(json_cache_path)
     
     should_read_csv = True
     
+    # Inicializar caches para este país si no existen
+    if country_code not in master_qty_map:
+        master_qty_map[country_code] = {}
+
     if json_exists and csv_exists:
         # Comparar timestamps: solo leer CSV si es más nuevo que el JSON
-        csv_mtime = os.path.getmtime(ITEM_MASTER_CSV_PATH)
+        csv_mtime = os.path.getmtime(item_master_path)
         json_mtime = os.path.getmtime(json_cache_path)
         
         if json_mtime >= csv_mtime:
             # JSON está actualizado, cargar desde ahí
             try:
-                print(f"⚡ Cargando master_qty_map desde JSON cache (más rápido)...")
-                with open(json_cache_path, 'r') as f:
-                    master_qty_map_data = json.load(f)
-                master_qty_map.clear()
-                master_qty_map.update(master_qty_map_data)
-                master_file_mtime = csv_mtime
-                print(f"✅ master_qty_map cargado desde JSON: {len(master_qty_map)} items")
+                print(f"⚡ [{country_code}] Cargando master_qty_map desde JSON cache...")
+                with open(json_cache_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                master_qty_map[country_code].clear()
+                master_qty_map[country_code].update(data)
+                master_file_mtime[country_code] = csv_mtime
                 should_read_csv = False
             except Exception as e:
-                print(f"⚠️ Error leyendo JSON cache, fallback a CSV: {e}")
+                print(f"⚠️ [{country_code}] Error leyendo JSON cache, fallback a CSV: {e}")
                 should_read_csv = True
     
-    # Solo leer CSV si es necesario (JSON no existe o está desactualizado)
-    if should_read_csv:
-        print(f"📖 Leyendo CSV maestro (JSON no disponible o desactualizado)...")
-        df_master = await read_csv_safe(ITEM_MASTER_CSV_PATH, columns=COLUMNS_TO_READ_MASTER)
+    if should_read_csv and csv_exists:
+        print(f"📖 [{country_code}] Leyendo CSV maestro...")
+        df_master = await read_csv_safe(item_master_path, columns=COLUMNS_TO_READ_MASTER)
         
         if df_master is not None:
-            print(f"Cargados {len(df_master)} registros del maestro de items.")
-            # Guardar timestamp del archivo maestro para detectar cambios
-            if os.path.exists(ITEM_MASTER_CSV_PATH):
-                master_file_mtime = os.path.getmtime(ITEM_MASTER_CSV_PATH)
+            master_file_mtime[country_code] = os.path.getmtime(item_master_path)
+            master_qty_map[country_code].clear()
+            items = df_master['Item_Code'].values
+            quantities = pd.to_numeric(df_master['Physical_Qty'], errors='coerce').fillna(0).astype(int).values
+            master_qty_map[country_code].update(dict(zip(items, quantities)))
+
+            # Persistir master_qty_map a JSON
             try:
-                master_qty_map.clear()
-                items = df_master['Item_Code'].values
-                quantities = pd.to_numeric(df_master['Physical_Qty'], errors='coerce').fillna(0).astype(int).values
-                master_qty_map.update(dict(zip(items, quantities)))
-                print(f"master_qty_map construido con {len(master_qty_map)} items, {sum(1 for q in master_qty_map.values() if q > 0)} con stock > 0")
+                def numpy_converter(obj):
+                    if isinstance(obj, (np.integer, int)): return int(obj)
+                    if isinstance(obj, (np.floating, float)): return float(obj)
+                    raise TypeError(f"Type {type(obj)} not serializable")
 
-                # Persistir master_qty_map a JSON
-                try:
-                    def numpy_converter(obj):
-                        if isinstance(obj, np.integer):
-                            return int(obj)
-                        if isinstance(obj, np.floating):
-                            return float(obj)
-                        raise TypeError(f"Type {type(obj)} not serializable")
+                with open(json_cache_path, 'w', encoding='utf-8') as f:
+                    json.dump(master_qty_map[country_code], f, default=numpy_converter)
+            except Exception: pass
 
-                    with open(json_cache_path, 'w') as f:
-                        json.dump(master_qty_map, f, default=numpy_converter)
-                    print(f"💾 Mapa de stock guardado en JSON cache: {json_cache_path}")
-                except Exception as e:
-                    print(f"No se pudo guardar la cache JSON de stock: {e}")
+    # Cargar GRN
+    await load_grn_data_optimized(country_code)
 
-            except Exception as e:
-                print(f"Warning: no se pudo construir master_qty_map: {e}")
-                master_qty_map.clear()
-
-    # Cargar GRN usando estrategia JSON cache para optimizar
-    await load_grn_data_optimized()
-
-    # Liberar df_master_cache para conservar memoria
-    df_master_cache = None
-
-async def load_grn_data_optimized():
-    """
-    Carga el GRN. Primero intenta desde cache JSON. Si el CSV cambió, regenera el JSON.
-    Reconstruye df_grn_cache para compatibilidad.
-    """
+async def load_grn_data_optimized(country_code: str):
     global df_grn_cache, grn_file_mtime
     
-    if not os.path.exists(GRN_CSV_FILE_PATH):
-        print("Archivo GRN no encontrado.")
-        df_grn_cache = None
+    grn_csv_path = get_country_csv_path(DATABASE_FOLDER, 'AURRSGLBD0280.csv', country_code)
+    if not os.path.exists(grn_csv_path):
+        df_grn_cache[country_code] = None
         return
 
-    json_cache_path = os.path.join(os.path.dirname(GRN_CSV_FILE_PATH), 'grn_cache.json')
-    current_mtime = os.path.getmtime(GRN_CSV_FILE_PATH)
+    json_cache_path = os.path.join(os.path.dirname(grn_csv_path), 'grn_cache.json')
+    current_mtime = os.path.getmtime(grn_csv_path)
     
-    # Verificar si necesitamos regenerar cache
-    need_regenerate = True
-    if os.path.exists(json_cache_path) and grn_file_mtime == current_mtime:
-        need_regenerate = False
-        print("Usando cache JSON para GRN...")
+    if os.path.exists(json_cache_path) and grn_file_mtime.get(country_code) == current_mtime:
+        # Ya está cargado y actualizado
+        return
     
-    if need_regenerate:
-        print("Regenerando cache JSON para GRN desde CSV...")
-        df_grn_raw = await read_csv_safe(GRN_CSV_FILE_PATH, columns=COLUMNS_TO_READ_GRN)
-        if df_grn_raw is not None:
-            # Guardamos datos crudos o agregados?
-            # Para reconciliación necesitamos detalle de líneas (GRN_Number, Item_Code, Qty).
-            # No podemos agregar solo por Item_Code si el reporte pide detalle por GRN.
-            # Guardaremos la lista de registros completa en JSON.
-            grn_data = df_grn_raw.to_dict(orient='records')
-            
-            try:
-                with open(json_cache_path, 'w') as f:
-                    json.dump(grn_data, f)
-                grn_file_mtime = current_mtime
-                # Cargar en memoria
-                df_grn_cache = df_grn_raw
-                print(f"GRN Cache regenerado: {len(grn_data)} registros.")
-            except Exception as e:
-                print(f"Error guardando cache GRN: {e}")
-                df_grn_cache = df_grn_raw # Fallback
-        else:
-            df_grn_cache = None
-    else:
-        # Cargar desde JSON
+    print(f"Regenerando cache JSON para GRN ({country_code})...")
+    df_grn_raw = await read_csv_safe(grn_csv_path, columns=COLUMNS_TO_READ_GRN)
+    if df_grn_raw is not None:
+        grn_data = df_grn_raw.to_dict(orient='records')
         try:
-            with open(json_cache_path, 'r') as f:
-                grn_data = json.load(f)
-            df_grn_cache = pd.DataFrame(grn_data)
-            # Asegurar tipos
-            if not df_grn_cache.empty:
-                df_grn_cache['Quantity'] = pd.to_numeric(df_grn_cache['Quantity'], errors='coerce').fillna(0)
-            grn_file_mtime = current_mtime
-        except Exception as e:
-            print(f"Error leyendo cache JSON GRN, reintentando CSV: {e}")
-            # Fallback a CSV directo
-            df_grn_cache = await read_csv_safe(GRN_CSV_FILE_PATH, columns=COLUMNS_TO_READ_GRN)
-            grn_file_mtime = current_mtime
+            with open(json_cache_path, 'w', encoding='utf-8') as f:
+                json.dump(grn_data, f)
+            grn_file_mtime[country_code] = current_mtime
+            df_grn_cache[country_code] = df_grn_raw
+        except Exception:
+            df_grn_cache[country_code] = df_grn_raw
+    else:
+        df_grn_cache[country_code] = None
 
 
 
-async def reload_cache_if_needed():
+async def reload_cache_if_needed(country_code: str = "MX"):
     """
-    Verifica si los archivos CSV (Maestro o GRN) cambiaron y recarga el cache si es necesario.
-    Se ejecuta al inicio de cada request. Cada worker detecta cambios independientemente.
-    
-    OPTIMIZACIÓN: Solo verifica timestamps cada 5 segundos para evitar I/O excesivo.
+    Verifica si los archivos CSV cambiaron para un país determinado.
     """
-    global grn_file_mtime, master_file_mtime, _last_check_time
+    global grn_file_mtime, master_file_mtime
     
     import time
     current_time = time.time()
     
-    # THROTTLE: Solo verificar cada 5 segundos
-    if hasattr(reload_cache_if_needed, '_last_check') and (current_time - reload_cache_if_needed._last_check) < 5:
-        return  # Skip check, too soon
+    # Throttle por país
+    check_key = f'_last_check_{country_code}'
+    if hasattr(reload_cache_if_needed, check_key) and (current_time - getattr(reload_cache_if_needed, check_key)) < 5:
+        return
+    setattr(reload_cache_if_needed, check_key, current_time)
     
-    reload_cache_if_needed._last_check = current_time
+    item_master_path = get_country_csv_path(DATABASE_FOLDER, 'AURRSGLBD0250.csv', country_code)
+    grn_csv_path = get_country_csv_path(DATABASE_FOLDER, 'AURRSGLBD0280.csv', country_code)
     
     need_reload = False
     
-    # Verificar archivo Maestro
-    if os.path.exists(ITEM_MASTER_CSV_PATH):
-        current_master_mtime = os.path.getmtime(ITEM_MASTER_CSV_PATH)
-        # Solo recargar si el timestamp cambió (no si es None en la primera carga)
-        if master_file_mtime is not None and current_master_mtime != master_file_mtime:
-            print(f"⚠️ Archivo Maestro modificado detectado. Recargando cache...")
+    if os.path.exists(item_master_path):
+        mtime = os.path.getmtime(item_master_path)
+        if master_file_mtime.get(country_code) is not None and mtime != master_file_mtime.get(country_code):
             need_reload = True
-        elif master_file_mtime is None:
-            # Primera carga, solo actualizar el timestamp sin recargar
-            # (ya se cargó en el startup de la app)
-            master_file_mtime = current_master_mtime
-    
-    # Verificar archivo GRN
-    if os.path.exists(GRN_CSV_FILE_PATH):
-        current_grn_mtime = os.path.getmtime(GRN_CSV_FILE_PATH)
-        # Solo recargar si el timestamp cambió (no si es None en la primera carga)
-        if grn_file_mtime is not None and current_grn_mtime != grn_file_mtime:
-            print(f"⚠️ Archivo GRN modificado detectado. Recargando cache...")
+        master_file_mtime[country_code] = mtime
+            
+    if os.path.exists(grn_csv_path):
+        mtime = os.path.getmtime(grn_csv_path)
+        if grn_file_mtime.get(country_code) is not None and mtime != grn_file_mtime.get(country_code):
             need_reload = True
-        elif grn_file_mtime is None:
-            # Primera carga, solo actualizar el timestamp sin recargar
-            grn_file_mtime = current_grn_mtime
+        grn_file_mtime[country_code] = mtime
     
     if need_reload:
-        await load_csv_data()
+        await load_csv_data(country_code)
 
 
 
 
-async def get_item_details_from_master_csv(item_code: str):
-    """Busca detalles de un item leyendo el CSV por chunks para no mantenerlo en memoria."""
+async def get_item_details_from_master_csv(item_code: str, country_code: str = "MX"):
+    """Busca detalles de un item leyendo el CSV del país correspondiente."""
     if not item_code:
         return None
 
     item_code = str(item_code).strip()
-    if not os.path.exists(ITEM_MASTER_CSV_PATH):
-        raise HTTPException(status_code=500, detail="El maestro de items no está disponible.")
+    item_master_path = get_country_csv_path(DATABASE_FOLDER, 'AURRSGLBD0250.csv', country_code)
+    
+    if not os.path.exists(item_master_path):
+        raise HTTPException(status_code=500, detail=f"Maestro de items ({country_code}) no disponible.")
 
     def find_item():
         try:
             for chunk in pd.read_csv(
-                ITEM_MASTER_CSV_PATH,
+                item_master_path,
                 usecols=COLUMNS_TO_READ_MASTER,
                 dtype=str,
                 keep_default_na=True,
@@ -260,32 +209,30 @@ async def get_item_details_from_master_csv(item_code: str):
         print(f"Error buscando item {item_code} en CSV: {e}")
         raise HTTPException(status_code=500, detail="Error leyendo maestro de items.")
 
-async def get_total_expected_quantity_for_item(item_code_form: str):
-    """Suma la cantidad esperada para un item desde el archivo GRN cacheado."""
-    if df_grn_cache is None:
+async def get_total_expected_quantity_for_item(item_code_form: str, country_code: str = "MX"):
+    """Suma la cantidad esperada para un item desde el archivo GRN cacheado del país."""
+    cache = df_grn_cache.get(country_code)
+    if cache is None:
         return 0
     
-    total_expected_quantity = 0
-    result_df = df_grn_cache[df_grn_cache['Item_Code'] == item_code_form]
-    
+    result_df = cache[cache['Item_Code'] == item_code_form]
     if not result_df.empty:
-        # Convierte la columna 'Quantity' a numérico, tratando errores como 0
         numeric_quantities = pd.to_numeric(result_df['Quantity'], errors='coerce').fillna(0)
-        total_expected_quantity = int(numeric_quantities.sum())
-        
-    return total_expected_quantity
+        return int(numeric_quantities.sum())
+    return 0
 
-async def load_master_subset(columns: list, positive_stock_only: bool = False):
-    """Carga columnas específicas del maestro en memoria temporal, con opción de filtrar stock > 0."""
-    if not os.path.exists(ITEM_MASTER_CSV_PATH):
-        raise HTTPException(status_code=500, detail="El maestro de items no está disponible.")
+async def load_master_subset(columns: list, positive_stock_only: bool = False, country_code: str = "MX"):
+    """Carga columnas específicas del maestro en memoria temporal para un país."""
+    item_master_path = get_country_csv_path(DATABASE_FOLDER, 'AURRSGLBD0250.csv', country_code)
+    if not os.path.exists(item_master_path):
+        raise HTTPException(status_code=500, detail=f"Maestro de items ({country_code}) no disponible.")
 
     selected_cols = list(dict.fromkeys(columns + (['Physical_Qty'] if positive_stock_only and 'Physical_Qty' not in columns else [])))
 
     def load_subset():
         frames = []
         for chunk in pd.read_csv(
-            ITEM_MASTER_CSV_PATH,
+            item_master_path,
             usecols=selected_cols,
             dtype=str,
             keep_default_na=True,
@@ -307,15 +254,16 @@ async def load_master_subset(columns: list, positive_stock_only: bool = False):
         raise HTTPException(status_code=500, detail="Error leyendo maestro de items.")
 
 
-async def get_locations_with_stock_count():
-    """Calcula cuántas ubicaciones (Bin_1) tienen stock físico > 0 sin mantener el maestro en memoria."""
-    if not os.path.exists(ITEM_MASTER_CSV_PATH):
-        raise HTTPException(status_code=500, detail="El maestro de items no está disponible.")
+async def get_locations_with_stock_count(country_code: str = "MX"):
+    """Calcula cuántas ubicaciones tienen stock físico > 0 para un país."""
+    item_master_path = get_country_csv_path(DATABASE_FOLDER, 'AURRSGLBD0250.csv', country_code)
+    if not os.path.exists(item_master_path):
+        raise HTTPException(status_code=500, detail=f"Maestro de items ({country_code}) no disponible.")
 
     def compute_bins():
         bins = set()
         for chunk in pd.read_csv(
-            ITEM_MASTER_CSV_PATH,
+            item_master_path,
             usecols=['Physical_Qty', 'Bin_1'],
             dtype=str,
             keep_default_na=True,

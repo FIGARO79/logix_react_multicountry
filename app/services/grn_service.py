@@ -9,10 +9,10 @@ from app.core.config import PROJECT_ROOT
 
 GRN_EXCEL_PATH = os.path.join(PROJECT_ROOT, "GRN.xlsx")
 
-async def seed_grn_from_excel(db: AsyncSession):
+async def seed_grn_from_excel(db: AsyncSession, country_code: str = "MX"):
     """
-    Lee el archivo GRN.xlsx y precarga los datos en la tabla grn_master.
-    Evita duplicados basados en import_reference y waybill.
+    Lee el archivo GRN.xlsx y precarga los datos en la tabla grn_master para un país específico.
+    Evita duplicados basados en import_reference, waybill y country_code.
     """
     if not os.path.exists(GRN_EXCEL_PATH):
         print(f"Archivo Excel no encontrado en: {GRN_EXCEL_PATH}")
@@ -36,10 +36,11 @@ async def seed_grn_from_excel(db: AsyncSession):
             if not imp_ref or not waybill:
                 continue
 
-            # Verificar si ya existe para evitar duplicados
+            # Verificar si ya existe para evitar duplicados (aislado por país)
             stmt = select(GRNMaster).where(
                 GRNMaster.import_reference == imp_ref,
-                GRNMaster.waybill == waybill
+                GRNMaster.waybill == waybill,
+                GRNMaster.country_code == country_code
             )
             result = await db.execute(stmt)
             if result.scalar_one_or_none():
@@ -64,7 +65,8 @@ async def seed_grn_from_excel(db: AsyncSession):
                 aaf_grn1=row.get('AAF/GRN1'),
                 grn3_date=fmt_date(row.get('GRN3 Date')),
                 grn1_grn3=row.get('GRN1/GRN3'),
-                ct=str(row.get('CT', '')) if row.get('CT') else None
+                ct=str(row.get('CT', '')) if row.get('CT') else None,
+                country_code=country_code
             )
             db.add(new_grn)
             records_added += 1

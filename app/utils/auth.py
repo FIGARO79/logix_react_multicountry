@@ -18,7 +18,7 @@ async def get_user_by_id(db: AsyncSession, user_id: int) -> Optional[Dict[str, A
     user = result.scalar_one_or_none()
     return user.to_dict() if user else None
 
-async def create_user(db: AsyncSession, username: str, password: str, is_approved: int = 0, permissions: str = "") -> bool:
+async def create_user(db: AsyncSession, username: str, password: str, country_code: str = "MX", is_approved: int = 0, permissions: str = "") -> bool:
     """
     Crea un nuevo usuario en la base de datos.
     Devuelve True si se creó con éxito, False si el usuario ya existe.
@@ -32,18 +32,24 @@ async def create_user(db: AsyncSession, username: str, password: str, is_approve
         return False
 
     hashed_password = generate_password_hash(password)
-    new_user = User(username=username, password_hash=hashed_password, is_approved=is_approved, permissions=permissions)
+    new_user = User(
+        username=username, 
+        password_hash=hashed_password, 
+        country_code=country_code,
+        is_approved=is_approved, 
+        permissions=permissions
+    )
     
     db.add(new_user)
     await db.commit()
     return True
 
-async def verify_user(db: AsyncSession, username: str, password: str) -> tuple[bool, str]:
+async def verify_user(db: AsyncSession, username: str, password: str, country_code: str) -> tuple[bool, str]:
     """
     Verifica las credenciales del usuario.
     Devuelve una tupla: (True/False si es válido, 'approved'/'pending'/'invalid' como estado).
     """
-    result = await db.execute(select(User).where(User.username == username))
+    result = await db.execute(select(User).where(User.username == username, User.country_code == country_code))
     user = result.scalar_one_or_none()
 
     if user and check_password_hash(user.password_hash, password):

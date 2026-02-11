@@ -38,7 +38,7 @@ else:
     # URL de conexión asíncrona para MySQL
     ASYNC_DB_URL = f"mysql+aiomysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     
-    env_label = "🌐 [PRODUCCIÓN]" if ENVIRONMENT == 'production' else "💻 [DESARROLLO]"
+    env_label = "[PRODUCCIÓN]" if ENVIRONMENT == 'production' else "[DESARROLLO]"
     print(f"{env_label} Base de Datos: MySQL")
     print(f"   Servidor: {DB_HOST}:{DB_PORT}")
     print(f"   Base de Datos: {DB_NAME}")

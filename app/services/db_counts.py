@@ -8,10 +8,10 @@ from sqlalchemy import select, update, delete
 from app.models.sql_models import StockCount, CountSession, AppState, SessionLocation, CycleCount
 from typing import List, Dict, Any, Optional
 
-async def load_all_counts_db_async(db: AsyncSession) -> List[Dict[str, Any]]:
-    """Carga todos los conteos de stock."""
+async def load_all_counts_db_async(db: AsyncSession, country_code: str) -> List[Dict[str, Any]]:
+    """Carga todos los conteos de stock para el país."""
     try:
-        result = await db.execute(select(StockCount).order_by(StockCount.id.desc()))
+        result = await db.execute(select(StockCount).where(StockCount.country_code == country_code).order_by(StockCount.id.desc()))
         counts = result.scalars().all()
         # Convertir a diccionarios
         return [
@@ -33,11 +33,11 @@ async def load_all_counts_db_async(db: AsyncSession) -> List[Dict[str, Any]]:
         return []
 
 
-async def create_count_session(db: AsyncSession, username: str) -> Dict[str, Any]:
-    """Crea una nueva sesión de conteo para un usuario."""
+async def create_count_session(db: AsyncSession, username: str, country_code: str) -> Dict[str, Any]:
+    """Crea una nueva sesión de conteo para un usuario y país."""
     try:
-        # Obtener la etapa de inventario global actual
-        result = await db.execute(select(AppState).where(AppState.key == 'current_inventory_stage'))
+        # Obtener la etapa de inventario global actual para el país
+        result = await db.execute(select(AppState).where(AppState.key == 'current_inventory_stage', AppState.country_code == country_code))
         stage_row = result.scalar_one_or_none()
         current_stage = int(stage_row.value) if (stage_row and stage_row.value) else 0
 
@@ -51,7 +51,8 @@ async def create_count_session(db: AsyncSession, username: str) -> Dict[str, Any
         # Finalizar sesiones anteriores del mismo usuario
         stmt = update(CountSession).where(
             CountSession.user_username == username,
-            CountSession.status == 'in_progress'
+            CountSession.status == 'in_progress',
+            CountSession.country_code == country_code
         ).values(
             status='completed',
             end_time=datetime.datetime.now().isoformat(timespec='seconds')
@@ -63,7 +64,8 @@ async def create_count_session(db: AsyncSession, username: str) -> Dict[str, Any
             user_username=username,
             start_time=datetime.datetime.now().isoformat(timespec='seconds'),
             status='in_progress',
-            inventory_stage=current_stage
+            inventory_stage=current_stage,
+            country_code=country_code
         )
         db.add(new_session)
         await db.commit()
@@ -80,11 +82,11 @@ async def create_count_session(db: AsyncSession, username: str) -> Dict[str, Any
         raise HTTPException(status_code=500, detail=f"Error de base de datos: {e}")
 
 
-async def get_active_session_for_user(db: AsyncSession, username: str) -> Optional[Dict[str, Any]]:
-    """Obtiene la sesión activa de un usuario."""
+async def get_active_session_for_user(db: AsyncSession, username: str, country_code: str) -> Optional[Dict[str, Any]]:
+    """Obtiene la sesión activa de un usuario en un país."""
     result = await db.execute(
         select(CountSession)
-        .where(CountSession.user_username == username, CountSession.status == 'in_progress')
+        .where(CountSession.user_username == username, CountSession.status == 'in_progress', CountSession.country_code == country_code)
         .order_by(CountSession.start_time.desc())
         .limit(1)
     )
@@ -101,10 +103,10 @@ async def get_active_session_for_user(db: AsyncSession, username: str) -> Option
     return None
 
 
-async def close_count_session(db: AsyncSession, session_id: int, username: str) -> Dict[str, str]:
+async def close_count_session(db: AsyncSession, session_id: int, username: str, country_code: str) -> Dict[str, str]:
     """Cierra una sesión de conteo."""
-    # Verificar que la sesión pertenece al usuario
-    result = await db.execute(select(CountSession).where(CountSession.id == session_id, CountSession.user_username == username))
+    # Verificar que la sesión pertenece al usuario y país
+    result = await db.execute(select(CountSession).where(CountSession.id == session_id, CountSession.user_username == username, CountSession.country_code == country_code))
     session = result.scalar_one_or_none()
     
     if not session:
@@ -117,12 +119,12 @@ async def close_count_session(db: AsyncSession, session_id: int, username: str) 
     return {"message": f"Sesión {session_id} cerrada con éxito."}
 
 
-async def close_location_in_session(db: AsyncSession, session_id: int, location_code: str, username: str) -> Dict[str, str]:
+async def close_location_in_session(db: AsyncSession, session_id: int, location_code: str, username: str, country_code: str) -> Dict[str, str]:
     """Marca una ubicación como cerrada en una sesión."""
-    # Verificar que la sesión existe y pertenece al usuario y está activa
+    # Verificar que la sesión existe y pertenece al usuario y está activa para el país
     result = await db.execute(
         select(CountSession)
-        .where(CountSession.id == session_id, CountSession.user_username == username, CountSession.status == 'in_progress')
+        .where(CountSession.id == session_id, CountSession.user_username == username, CountSession.status == 'in_progress', CountSession.country_code == country_code)
     )
     session = result.scalar_one_or_none()
     
@@ -153,12 +155,12 @@ async def close_location_in_session(db: AsyncSession, session_id: int, location_
     return {"message": f"Ubicación {location_code} cerrada para la sesión {session_id}."}
 
 
-async def reopen_location_in_session(db: AsyncSession, session_id: int, location_code: str, username: str) -> Dict[str, str]:
+async def reopen_location_in_session(db: AsyncSession, session_id: int, location_code: str, username: str, country_code: str) -> Dict[str, str]:
     """Reabre una ubicación en una sesión."""
-    # Verificar sesión
+    # Verificar sesión y país
     result = await db.execute(
         select(CountSession)
-        .where(CountSession.id == session_id, CountSession.user_username == username, CountSession.status == 'in_progress')
+        .where(CountSession.id == session_id, CountSession.user_username == username, CountSession.status == 'in_progress', CountSession.country_code == country_code)
     )
     session = result.scalar_one_or_none()
     
@@ -180,29 +182,29 @@ async def reopen_location_in_session(db: AsyncSession, session_id: int, location
         raise HTTPException(status_code=404, detail="La ubicación no estaba cerrada.")
 
 
-async def get_locations_for_session(db: AsyncSession, session_id: int, username: str) -> List[Dict[str, Any]]:
+async def get_locations_for_session(db: AsyncSession, session_id: int, username: str, country_code: str) -> List[Dict[str, Any]]:
     """Obtiene todas las ubicaciones de una sesión."""
-    # Verificar permiso
-    result = await db.execute(select(CountSession).where(CountSession.id == session_id, CountSession.user_username == username))
+    # Verificar permiso y país
+    result = await db.execute(select(CountSession).where(CountSession.id == session_id, CountSession.user_username == username, CountSession.country_code == country_code))
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=403, detail="No tienes permiso para ver esta sesión.")
 
-    result_locs = await db.execute(select(SessionLocation).where(SessionLocation.session_id == session_id))
+    result_locs = await db.execute(select(SessionLocation).where(SessionLocation.session_id == session_id, SessionLocation.country_code == country_code))
     locations = result_locs.scalars().all()
     
     return [{"location_code": loc.location_code, "status": loc.status} for loc in locations]
 
 
-async def get_counts_for_location(db: AsyncSession, session_id: int, location_code: str, username: str) -> List[Dict[str, Any]]:
-    """Obtiene todos los conteos para una ubicación específica."""
-    # Verificar permiso
-    result = await db.execute(select(CountSession).where(CountSession.id == session_id, CountSession.user_username == username))
+async def get_counts_for_location(db: AsyncSession, session_id: int, location_code: str, username: str, country_code: str) -> List[Dict[str, Any]]:
+    """Obtiene todos los conteos para una ubicación específica en un país."""
+    # Verificar permiso y país
+    result = await db.execute(select(CountSession).where(CountSession.id == session_id, CountSession.user_username == username, CountSession.country_code == country_code))
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=403, detail="No tienes permiso para ver estos datos.")
 
     result_counts = await db.execute(
         select(StockCount)
-        .where(StockCount.session_id == session_id, StockCount.counted_location == location_code)
+        .where(StockCount.session_id == session_id, StockCount.counted_location == location_code, StockCount.country_code == country_code)
         .order_by(StockCount.timestamp.desc())
     )
     counts = result_counts.scalars().all()
@@ -225,8 +227,8 @@ async def get_counts_for_location(db: AsyncSession, session_id: int, location_co
 
 async def save_stock_count(db: AsyncSession, session_id: int, item_code: str, counted_qty: int, 
                            counted_location: str, description: str, 
-                           bin_location_system: str, username: str) -> Optional[int]:
-    """Guarda un conteo de stock."""
+                           bin_location_system: str, username: str, country_code: str) -> Optional[int]:
+    """Guarda un conteo de stock para un país."""
     try:
         new_count = StockCount(
             session_id=session_id,
@@ -236,7 +238,8 @@ async def save_stock_count(db: AsyncSession, session_id: int, item_code: str, co
             counted_qty=counted_qty,
             counted_location=counted_location,
             bin_location_system=bin_location_system,
-            username=username
+            username=username,
+            country_code=country_code
         )
         db.add(new_count)
         await db.commit()
@@ -248,8 +251,9 @@ async def save_stock_count(db: AsyncSession, session_id: int, item_code: str, co
             new_cycle_entry = CycleCount(
                 item_code=item_code,
                 timestamp=new_count.timestamp,
-                abc_code=None, # Se podría llenar si tuviéramos el dato aquí, o dejar que el planner lo cruce
-                count_id=new_count.id
+                abc_code=None,
+                count_id=new_count.id,
+                country_code=country_code
             )
             db.add(new_cycle_entry)
             await db.commit()
@@ -264,10 +268,10 @@ async def save_stock_count(db: AsyncSession, session_id: int, item_code: str, co
         return None
 
 
-async def delete_stock_count(db: AsyncSession, count_id: int) -> bool:
+async def delete_stock_count(db: AsyncSession, count_id: int, country_code: str) -> bool:
     """Elimina un conteo de stock."""
     try:
-        stmt = delete(StockCount).where(StockCount.id == count_id)
+        stmt = delete(StockCount).where(StockCount.id == count_id, StockCount.country_code == country_code)
         result = await db.execute(stmt)
         await db.commit()
         return result.rowcount > 0

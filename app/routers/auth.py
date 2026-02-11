@@ -25,12 +25,12 @@ router = APIRouter(tags=["auth"])
 
 
 @router.post('/api/register')
-async def register_api(request: Request, username: str = Form(...), password: str = Form(...), db: AsyncSession = Depends(get_db)):
+async def register_api(request: Request, username: str = Form(...), password: str = Form(...), country: str = Form("MX"), db: AsyncSession = Depends(get_db)):
     """API: Procesa el registro de un nuevo usuario."""
     if not is_strong_password(password):
         return JSONResponse(status_code=400, content={"error": "La contraseña debe tener al menos 8 caracteres, incluir letras y dígitos."})
 
-    success = await create_user(db, username, password, is_approved=0)
+    success = await create_user(db, username, password, country_code=country, is_approved=0)
     if success:
         return JSONResponse(content={"message": "Registro exitoso. Espera la aprobación del administrador."})
     else:
@@ -38,12 +38,13 @@ async def register_api(request: Request, username: str = Form(...), password: st
 
 
 @router.post('/api/login')
-async def login_api(request: Request, username: str = Form(...), password: str = Form(...), db: AsyncSession = Depends(get_db)):
+async def login_api(request: Request, username: str = Form(...), password: str = Form(...), country: str = Form("MX"), db: AsyncSession = Depends(get_db)):
     """API: Procesa el login de un usuario y retorna JSON."""
-    valid, status_msg = await verify_user(db, username, password)
+    valid, status_msg = await verify_user(db, username, password, country_code=country)
     
     if status_msg == "approved":
         request.session['user'] = username
+        request.session['country_code'] = country
         # Obtener detalles del usuario para enviarlos al frontend (frontend permissions)
         result = await db.execute(select(User).where(User.username == username))
         user_obj = result.scalar_one_or_none()

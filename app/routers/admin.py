@@ -12,7 +12,7 @@ from app.models.sql_models import User
 from sqlalchemy import update
 from app.core.config import ADMIN_PASSWORD
 from app.core.templates import templates
-from app.services.csv_handler import load_csv_data # Importar función de recarga
+from app.services.csv_handler import load_csv_data, get_current_country # Importar función de recarga
 
 router = APIRouter(prefix="/admin", tags=["admin_html"])
 api_router = APIRouter(prefix="/api/admin", tags=["admin_api"])
@@ -57,8 +57,9 @@ async def admin_reload_data(request: Request):
     if not request.session.get("admin_logged_in"):
         raise HTTPException(status_code=403, detail="No autorizado.")
     
-    await load_csv_data()
-    return JSONResponse({'message': 'Datos CSV recargados correctamente en memoria.'})
+    country = get_current_country(request) or "MX"
+    await load_csv_data(country_code=country)
+    return JSONResponse({'message': f'Datos CSV para {country} recargados correctamente en memoria.'})
 
 
 @router.post('/approve/{user_id}')
@@ -105,9 +106,9 @@ async def admin_reload_data_api(request: Request):
     """API: Recarga datos CSV (Hot Reload)."""
     if not request.session.get("admin_logged_in"):
         raise HTTPException(status_code=403, detail="No autorizado.")
-    await load_csv_data()
-    return JSONResponse({'message': 'Datos CSV recargados correctamente en memoria.'})
-
+    country = get_current_country(request) or "MX"
+    await load_csv_data(country_code=country)
+    return JSONResponse({'message': f'Datos CSV para {country} recargados correctamente en memoria.'})
 @api_router.post('/approve/{user_id}')
 async def approve_user_api(user_id: int, request: Request, db: AsyncSession = Depends(get_db)):
     """API: Aprueba un usuario."""

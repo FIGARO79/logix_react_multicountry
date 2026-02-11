@@ -20,7 +20,7 @@ from app.core.config import (
     GRN_COLUMN_NAME_IN_CSV,
     ADMIN_PASSWORD
 )
-from app.services.csv_handler import load_csv_data
+from app.services.csv_handler import load_csv_data, get_current_country, get_country_csv_path, DATABASE_FOLDER
 from app.utils.auth import login_required
 from app.core.templates import templates
 
@@ -60,17 +60,20 @@ async def update_files_post(
     message = ""
     error = ""
 
+    country = get_current_country(request) or "MX"
+    
     # Manejo del maestro de items
     if item_master and item_master.filename:
-        # Permitir cualquier nombre, confiamos en la clasificación del frontend
-        with open(ITEM_MASTER_CSV_PATH, "wb") as buffer:
+        target_path = get_country_csv_path(DATABASE_FOLDER, 'AURRSGLBD0250.csv', country)
+        with open(target_path, "wb") as buffer:
             shutil.copyfileobj(item_master.file, buffer)
-        message += f'Archivo "{item_master.filename}" actualizado (Maestro). '
+        message += f'Archivo "{item_master.filename}" actualizado (Maestro) para {country}. '
         files_uploaded = True
 
     # Manejo del archivo GRN (280)
     if grn_file and grn_file.filename:
         try:
+            target_path_grn = get_country_csv_path(DATABASE_FOLDER, 'AURRSGLBD0280.csv', country)
             new_data_df = pd.read_csv(grn_file.file, dtype=str)
             
             if selected_grns_280:
@@ -84,27 +87,26 @@ async def update_files_post(
                     pass
 
             if update_option_280 == 'combine':
-                if os.path.exists(GRN_CSV_FILE_PATH):
-                    existing_data_df = pd.read_csv(GRN_CSV_FILE_PATH, dtype=str)
+                if os.path.exists(target_path_grn):
+                    existing_data_df = pd.read_csv(target_path_grn, dtype=str)
                     
                     # Obtener las GRNs que vienen en el archivo nuevo
                     new_grns = new_data_df[GRN_COLUMN_NAME_IN_CSV].unique()
                     
                     # Eliminar del archivo existente todas las líneas de las GRNs que vienen en el nuevo archivo
-                    # Esto permite actualizar GRNs completas manteniendo todas sus líneas (incluyendo duplicados)
                     existing_data_df = existing_data_df[~existing_data_df[GRN_COLUMN_NAME_IN_CSV].isin(new_grns)]
                     
-                    # Combinar: mantener las GRNs que no están en el nuevo archivo + todas las líneas del nuevo archivo
+                    # Combinar
                     combined_df = pd.concat([existing_data_df, new_data_df], ignore_index=True)
                 else:
                     combined_df = new_data_df
 
-                combined_df.to_csv(GRN_CSV_FILE_PATH, index=False)
-                message += f'Archivo "{grn_file.filename}" combinado. '
+                combined_df.to_csv(target_path_grn, index=False)
+                message += f'Archivo "{grn_file.filename}" combinado para {country}. '
             
             else:  # 'replace'
-                new_data_df.to_csv(GRN_CSV_FILE_PATH, index=False)
-                message += f'Archivo "{grn_file.filename}" reemplazado. '
+                new_data_df.to_csv(target_path_grn, index=False)
+                message += f'Archivo "{grn_file.filename}" reemplazado para {country}. '
             
             files_uploaded = True
         except Exception as e:
@@ -115,14 +117,15 @@ async def update_files_post(
 
     # Manejo del archivo de picking (240)
     if picking_file and picking_file.filename:
-        with open(PICKING_CSV_PATH, "wb") as buffer:
+        target_path_picking = get_country_csv_path(DATABASE_FOLDER, 'AURRSGLBD0240.csv', country)
+        with open(target_path_picking, "wb") as buffer:
             shutil.copyfileobj(picking_file.file, buffer)
-        message += f'Archivo "{picking_file.filename}" actualizado (Picking). '
+        message += f'Archivo "{picking_file.filename}" actualizado (Picking) para {country}. '
         files_uploaded = True
 
     if files_uploaded:
-        # Procesar en segundo plano para no bloquear al usuario
-        background_tasks.add_task(load_csv_data)
+        # Procesar en segundo plano
+        background_tasks.add_task(load_csv_data, country_code=country)
         message += " Procesamiento de datos iniciado en segundo plano."
 
     if not files_uploaded and not error:
@@ -162,15 +165,17 @@ async def clear_database_api(request: Request, password: str = Form(...), db: As
     if password != ADMIN_PASSWORD:
         return JSONResponse(status_code=401, content={"error": "Contraseña incorrecta"})
     
+    country = get_current_country(request) or "MX"
     try:
-        await db.execute(delete(Log))
+        await db.execute(delete(Log).where(Log.country_code == country))
         await db.commit()
-        return JSONResponse(content={"message": "Base de datos de logs limpiada correctamente"})
+        return JSONResponse(content={"message": f"Base de datos de logs para {country} limpiada correctamente"})
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 @router.post('/clear_database')
 async def clear_database(request: Request, password: str = Form(...), db: AsyncSession = Depends(get_db)):
+    country = get_current_country(request) or "MX"
     # La URL de redirección debe ser construida correctamente
     redirect_url = request.url_for('update_files_get')
 
@@ -179,10 +184,10 @@ async def clear_database(request: Request, password: str = Form(...), db: AsyncS
         return RedirectResponse(url=f'{redirect_url}?{query_params}', status_code=status.HTTP_302_FOUND)
     
     try:
-        await db.execute(delete(Log))
+        await db.execute(delete(Log).where(Log.country_code == country))
         await db.commit()
         
-        query_params = urlencode({'message': 'Base de datos de logs limpiada'})
+        query_params = urlencode({'message': f'Base de datos de logs para {country} limpiada'})
         return RedirectResponse(url=f'{redirect_url}?{query_params}', status_code=status.HTTP_302_FOUND)
     
     except Exception as e:
@@ -197,15 +202,16 @@ async def export_all_log_api(request: Request, password: str = Form(...), db: As
     if password != ADMIN_PASSWORD:
          return JSONResponse(status_code=401, content={"error": "Contraseña incorrecta"})
 
+    country = get_current_country(request) or "MX"
     try:
         from app.services import db_logs
         from openpyxl.utils import get_column_letter
 
         # Reuse logic? Copied for safety and speed.
-        logs_data = await db_logs.load_all_logs_db_async(db)
+        logs_data = await db_logs.load_all_logs_db_async(db, country_code=country)
         
         if not logs_data:
-             return JSONResponse(status_code=404, content={"error": "No hay datos para exportar backup"})
+             return JSONResponse(status_code=404, content={"error": f"No hay datos para exportar backup en {country}"})
 
         df = pd.DataFrame(logs_data)
         try:

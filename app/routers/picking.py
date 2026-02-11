@@ -4,10 +4,12 @@ Router para endpoints de picking.
 import os
 import datetime
 import pandas as pd
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
+from app.utils.country import get_current_country, get_country_csv_path
+from app.core.config import DATABASE_FOLDER
 from app.models.schemas import PickingAudit
 from app.models.sql_models import PickingAudit as PickingAuditModel, PickingAuditItem, PickingPackageItem
 from app.utils.auth import login_required, api_login_required, permission_required
@@ -16,14 +18,15 @@ from app.core.db import get_db
 router = APIRouter(prefix="/api", tags=["picking"])
 
 @router.get("/picking/order/{order_number}/{despatch_number}")
-async def get_picking_order(order_number: str, despatch_number: str, username: str = Depends(permission_required("picking"))):
-    """Obtiene los detalles de un pedido de picking desde el CSV."""
+async def get_picking_order(request: Request, order_number: str, despatch_number: str, username: str = Depends(permission_required("picking"))):
+    """Obtiene los detalles de un pedido de picking desde el CSV del país."""
+    country = get_current_country(request) or "MX"
     try:
-        from app.core.config import PICKING_CSV_PATH
-        if not os.path.exists(PICKING_CSV_PATH):
+        picking_csv_path = get_country_csv_path(DATABASE_FOLDER, 'AURRSGLBD0240.csv', country)
+        if not os.path.exists(picking_csv_path):
             raise HTTPException(status_code=404, detail="El archivo de picking no se encuentra.")
 
-        df = pd.read_csv(PICKING_CSV_PATH, dtype=str)
+        df = pd.read_csv(picking_csv_path, dtype=str)
         
         required_columns = ["ORDER_", "DESPATCH_", "ITEM", "DESCRIPTION", "QTY", "CUSTOMER_NAME", "ORDER_LINE"]
         if not all(col in df.columns for col in required_columns):
@@ -64,15 +67,16 @@ async def get_picking_order(order_number: str, despatch_number: str, username: s
 
 
 @router.get("/picking/tracking")
-async def get_picking_tracking(username: str = Depends(permission_required("picking")), db: AsyncSession = Depends(get_db)):
-    """Obtiene un resumen de todos los pedidos de picking desde el CSV para seguimiento."""
+async def get_picking_tracking(request: Request, username: str = Depends(permission_required("picking")), db: AsyncSession = Depends(get_db)):
+    """Resumen de picking para el país."""
+    country = get_current_country(request) or "MX"
     try:
-        from app.core.config import PICKING_CSV_PATH
-        if not os.path.exists(PICKING_CSV_PATH):
+        picking_csv_path = get_country_csv_path(DATABASE_FOLDER, 'AURRSGLBD0240.csv', country)
+        if not os.path.exists(picking_csv_path):
             raise HTTPException(status_code=404, detail="El archivo de picking no se encuentra.")
 
         # Leer CSV
-        df = pd.read_csv(PICKING_CSV_PATH, dtype=str)
+        df = pd.read_csv(picking_csv_path, dtype=str)
         
         required_columns = ["ORDER_", "DESPATCH_", "CUSTOMER_NAME", "PICK_LIST_PRINTED_TIME", "Time_Zone_Hours"]
         if not all(col in df.columns for col in required_columns):
@@ -138,8 +142,8 @@ async def get_picking_tracking(username: str = Depends(permission_required("pick
 
             return parsed_time.strftime("%Y-%m-%d %H:%M")
         
-        # Consultar pedidos auditados en la DB
-        result = await db.execute(select(PickingAuditModel.order_number, PickingAuditModel.despatch_number))
+        # Consultar pedidos auditados en la DB para el país
+        result = await db.execute(select(PickingAuditModel.order_number, PickingAuditModel.despatch_number).where(PickingAuditModel.country_code == country))
         audited_pairs = {(row.order_number, row.despatch_number) for row in result.all()}
 
         # Construir respuesta
@@ -166,11 +170,12 @@ async def get_picking_tracking(username: str = Depends(permission_required("pick
 
 
 @router.get('/picking/packing_list/{audit_id}')
-async def get_packing_list_data(audit_id: int, db: AsyncSession = Depends(get_db), username: str = Depends(permission_required("picking"))):
-    """API: Obtiene datos del packing list (bultos) para impresión."""
+async def get_packing_list_data(request: Request, audit_id: int, db: AsyncSession = Depends(get_db), username: str = Depends(permission_required("picking"))):
+    """API: Datos de packing list para el país."""
+    country = get_current_country(request) or "MX"
     try:
-        # Obtener la auditoría
-        result = await db.execute(select(PickingAuditModel).where(PickingAuditModel.id == audit_id))
+        # Obtener la auditoría validando país
+        result = await db.execute(select(PickingAuditModel).where(PickingAuditModel.id == audit_id, PickingAuditModel.country_code == country))
         audit = result.scalar_one_or_none()
         
         if not audit:
@@ -179,7 +184,7 @@ async def get_packing_list_data(audit_id: int, db: AsyncSession = Depends(get_db
         # Obtener los items asignados a bultos
         result = await db.execute(
             select(PickingPackageItem)
-            .where(PickingPackageItem.audit_id == audit_id)
+            .where(PickingPackageItem.audit_id == audit_id, PickingPackageItem.country_code == country)
             .order_by(PickingPackageItem.package_number, PickingPackageItem.item_code)
         )
         package_items = result.scalars().all()
@@ -213,12 +218,13 @@ async def get_packing_list_data(audit_id: int, db: AsyncSession = Depends(get_db
          raise HTTPException(status_code=500, detail=f"Error obteniendo packing list: {str(e)}")
 
 @router.get('/picking_audit/{audit_id}/print')
-async def get_picking_audit_for_print(audit_id: int, username: str = Depends(permission_required("picking")), db: AsyncSession = Depends(get_db)):
-    """Obtiene una auditoría de picking para impresión. Sin restricción de fecha."""
+async def get_picking_audit_for_print(request: Request, audit_id: int, username: str = Depends(permission_required("picking")), db: AsyncSession = Depends(get_db)):
+    """Auditoría para impresión (país)."""
+    country = get_current_country(request) or "MX"
     try:
         # Obtener la auditoría
         result = await db.execute(
-            select(PickingAuditModel).where(PickingAuditModel.id == audit_id)
+            select(PickingAuditModel).where(PickingAuditModel.id == audit_id, PickingAuditModel.country_code == country)
         )
         audit = result.scalar_one_or_none()
         
@@ -227,7 +233,7 @@ async def get_picking_audit_for_print(audit_id: int, username: str = Depends(per
         
         # Obtener los items
         result = await db.execute(
-            select(PickingAuditItem).where(PickingAuditItem.audit_id == audit_id)
+            select(PickingAuditItem).where(PickingAuditItem.audit_id == audit_id, PickingAuditItem.country_code == country)
         )
         items = result.scalars().all()
         
@@ -259,12 +265,13 @@ async def get_picking_audit_for_print(audit_id: int, username: str = Depends(per
 
 
 @router.get('/picking_audit/{audit_id}')
-async def get_picking_audit(audit_id: int, username: str = Depends(permission_required("picking")), db: AsyncSession = Depends(get_db)):
-    """Obtiene una auditoría de picking para edición. Solo permite editar auditorías del mismo día."""
+async def get_picking_audit(request: Request, audit_id: int, username: str = Depends(permission_required("picking")), db: AsyncSession = Depends(get_db)):
+    """Auditoría para edición (país)."""
+    country = get_current_country(request) or "MX"
     try:
         # Obtener la auditoría
         result = await db.execute(
-            select(PickingAuditModel).where(PickingAuditModel.id == audit_id)
+            select(PickingAuditModel).where(PickingAuditModel.id == audit_id, PickingAuditModel.country_code == country)
         )
         audit = result.scalar_one_or_none()
         
@@ -283,7 +290,7 @@ async def get_picking_audit(audit_id: int, username: str = Depends(permission_re
         
         # Obtener los items
         result = await db.execute(
-            select(PickingAuditItem).where(PickingAuditItem.audit_id == audit_id)
+            select(PickingAuditItem).where(PickingAuditItem.audit_id == audit_id, PickingAuditItem.country_code == country)
         )
         items = result.scalars().all()
         
@@ -315,12 +322,13 @@ async def get_picking_audit(audit_id: int, username: str = Depends(permission_re
 
 
 @router.put('/update_picking_audit/{audit_id}')
-async def update_picking_audit(audit_id: int, audit_data: PickingAudit, username: str = Depends(permission_required("picking")), db: AsyncSession = Depends(get_db)):
-    """Actualiza una auditoría de picking existente. Solo permite editar auditorías del mismo día."""
+async def update_picking_audit(request: Request, audit_id: int, audit_data: PickingAudit, username: str = Depends(permission_required("picking")), db: AsyncSession = Depends(get_db)):
+    """Actualiza auditoría (país)."""
+    country = get_current_country(request) or "MX"
     try:
         # Verificar que la auditoría existe y es del mismo día
         result = await db.execute(
-            select(PickingAuditModel).where(PickingAuditModel.id == audit_id)
+            select(PickingAuditModel).where(PickingAuditModel.id == audit_id, PickingAuditModel.country_code == country)
         )
         existing_audit = result.scalar_one_or_none()
         
@@ -338,7 +346,7 @@ async def update_picking_audit(audit_id: int, audit_data: PickingAudit, username
         
         # Obtener items anteriores para comparar
         result = await db.execute(
-            select(PickingAuditItem).where(PickingAuditItem.audit_id == audit_id)
+            select(PickingAuditItem).where(PickingAuditItem.audit_id == audit_id, PickingAuditItem.country_code == country)
         )
         old_items = {item.item_code: item for item in result.scalars().all()}
         
@@ -359,7 +367,7 @@ async def update_picking_audit(audit_id: int, audit_data: PickingAudit, username
             # Buscar el item en la base de datos
             result = await db.execute(
                 select(PickingAuditItem).where(
-                    and_(PickingAuditItem.audit_id == audit_id, PickingAuditItem.item_code == item.code)
+                    and_(PickingAuditItem.audit_id == audit_id, PickingAuditItem.item_code == item.code, PickingAuditItem.country_code == country)
                 )
             )
             db_item = result.scalar_one_or_none()
@@ -385,8 +393,9 @@ async def update_picking_audit(audit_id: int, audit_data: PickingAudit, username
 
 
 @router.post('/save_picking_audit')
-async def save_picking_audit(audit_data: PickingAudit, username: str = Depends(permission_required("picking")), db: AsyncSession = Depends(get_db)):
-    """Guarda una auditoría de picking en la base de datos."""
+async def save_picking_audit(request: Request, audit_data: PickingAudit, username: str = Depends(permission_required("picking")), db: AsyncSession = Depends(get_db)):
+    """Guarda auditoría (país)."""
+    country = get_current_country(request) or "MX"
     try:
         # 1. Crear la auditoría principal
         new_audit = PickingAuditModel(
@@ -396,7 +405,8 @@ async def save_picking_audit(audit_data: PickingAudit, username: str = Depends(p
             username=username,
             timestamp=datetime.datetime.now().isoformat(timespec='seconds'),
             status=audit_data.status,
-            packages=audit_data.packages if audit_data.packages else 0
+            packages=audit_data.packages if audit_data.packages else 0,
+            country_code=country
         )
         db.add(new_audit)
         await db.flush()  # Para obtener el ID
@@ -412,7 +422,8 @@ async def save_picking_audit(audit_data: PickingAudit, username: str = Depends(p
                 qty_req=item.qty_req,
                 qty_scan=item.qty_scan,
                 difference=difference,
-                edited=0  # edited = 0 para nuevas auditorías
+                edited=0,
+                country_code=country
             )
             db.add(new_item)
         
@@ -430,7 +441,8 @@ async def save_picking_audit(audit_data: PickingAudit, username: str = Depends(p
                             package_number=int(pkg_num),
                             item_code=item_code,
                             description=item_desc,
-                            qty_scan=qty
+                            qty_scan=qty,
+                            country_code=country
                         )
                         db.add(new_pkg_item)
 

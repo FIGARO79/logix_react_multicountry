@@ -13,6 +13,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.core.config import PROJECT_ROOT, SECRET_KEY
 from app.middleware.security import SchemeMiddleware, HSTSMiddleware
 from app.middleware.csv_cache_reload import CSVCacheReloadMiddleware
+from app.middleware.country import CountryMiddleware
 
 # Importar servicios
 from app.services.database import run_migrations
@@ -60,6 +61,9 @@ app.add_middleware(
 # para garantizar que los caches se actualicen antes de procesar el request
 # OPTIMIZADO: Ahora con throttle de 5 segundos para evitar I/O excesivo
 app.add_middleware(CSVCacheReloadMiddleware)
+
+# --- Middleware de aislamiento por País ---
+app.add_middleware(CountryMiddleware)
 
 # --- Middlewares de seguridad ---
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])

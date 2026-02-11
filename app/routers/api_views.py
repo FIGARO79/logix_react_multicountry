@@ -96,19 +96,21 @@ async def get_reconciliation_data(
     username: str = Depends(login_required),
     db: AsyncSession = Depends(get_db)
 ):
-    await csv_handler.reload_cache_if_needed()
+    country = get_current_country(request) or "MX"
+    await csv_handler.reload_cache_if_needed(country_code=country)
     
     try:
-        archive_versions = await db_logs.get_archived_versions_db_async(db)
+        archive_versions = await db_logs.get_archived_versions_db_async(db, country_code=country)
         
         async with async_engine.connect() as conn:
             if archive_date:
-                query = text('SELECT * FROM logs WHERE archived_at = :date')
-                logs_df = await conn.run_sync(lambda sync_conn: pd.read_sql_query(query, sync_conn, params={"date": archive_date}))
+                query = text('SELECT * FROM logs WHERE archived_at = :date AND country_code = :country')
+                logs_df = await conn.run_sync(lambda sync_conn: pd.read_sql_query(query, sync_conn, params={"date": archive_date, "country": country}))
             else:
-                logs_df = await conn.run_sync(lambda sync_conn: pd.read_sql_query('SELECT * FROM logs WHERE archived_at IS NULL', sync_conn))
+                query = text('SELECT * FROM logs WHERE archived_at IS NULL AND country_code = :country')
+                logs_df = await conn.run_sync(lambda sync_conn: pd.read_sql_query(query, sync_conn, params={"country": country}))
         
-        grn_df = csv_handler.df_grn_cache
+        grn_df = csv_handler.df_grn_cache.get(country)
         
         if logs_df.empty or grn_df is None:
             return {
@@ -182,13 +184,14 @@ async def get_reconciliation_data(
 
 @router.get('/view_picking_audits', response_model=List[PickingAuditSummary])
 async def view_picking_audits_api(request: Request, username: str = Depends(login_required), db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(PickingAudit).order_by(PickingAudit.id.desc()))
+    country = get_current_country(request) or "MX"
+    result = await db.execute(select(PickingAudit).where(PickingAudit.country_code == country).order_by(PickingAudit.id.desc()))
     audits_orm = result.scalars().all()
     
     audits = []
     for audit_orm in audits_orm:
         # Load items
-        result_items = await db.execute(select(PickingAuditItem).where(PickingAuditItem.audit_id == audit_orm.id))
+        result_items = await db.execute(select(PickingAuditItem).where(PickingAuditItem.audit_id == audit_orm.id, PickingAuditItem.country_code == country))
         items_orm = result_items.scalars().all()
         
         items_data = [
@@ -224,16 +227,17 @@ async def get_counts_data(
     username: str = Depends(login_required), 
     db: AsyncSession = Depends(get_db)
 ):
+    country = get_current_country(request) or "MX"
     from app.services.csv_handler import master_qty_map
     
-    all_counts = await db_counts.load_all_counts_db_async(db)
+    all_counts = await db_counts.load_all_counts_db_async(db, country_code=country)
     
     # Obtener información de sesiones (usuario y etapa)
     session_map = {}
     session_ids = list({c.get('session_id') for c in all_counts if c.get('session_id') is not None})
     if session_ids:
         try:
-            result = await db.execute(select(CountSession).where(CountSession.id.in_(session_ids)))
+            result = await db.execute(select(CountSession).where(CountSession.id.in_(session_ids), CountSession.country_code == country))
             sessions = result.scalars().all()
             session_map = {s.id: {'user': s.user_username, 'stage': s.inventory_stage} for s in sessions}
         except Exception:
@@ -248,7 +252,8 @@ async def get_counts_data(
     for count in all_counts:
         item_code = count.get('item_code')
         # Ensure system_qty is an integer or None (handle 'nan' from pandas/csv if any)
-        system_qty_raw = master_qty_map.get(item_code)
+        country_master_qty = master_qty_map.get(country, {})
+        system_qty_raw = country_master_qty.get(item_code)
         try:
             system_qty = int(float(system_qty_raw)) if system_qty_raw is not None else None
         except (ValueError, TypeError):
@@ -295,8 +300,9 @@ async def get_cycle_count_recordings(
     from app.models.sql_models import MasterItem
     
     # Cargar registros de la DB
+    country = get_current_country(request) or "MX"
     t1 = time.time()
-    result = await db.execute(select(CycleCountRecording).order_by(CycleCountRecording.id.desc()))
+    result = await db.execute(select(CycleCountRecording).where(CycleCountRecording.country_code == country).order_by(CycleCountRecording.id.desc()))
     recordings = result.scalars().all()
     print(f"⏱️ Query recordings: {time.time() - t1:.2f}s")
 
@@ -309,7 +315,7 @@ async def get_cycle_count_recordings(
     # Consultar todos los items necesarios en una sola query
     t2 = time.time()
     result_items = await db.execute(
-        select(MasterItem).where(MasterItem.item_code.in_(item_codes))
+        select(MasterItem).where(MasterItem.item_code.in_(item_codes), MasterItem.country_code == country)
     )
     master_items = result_items.scalars().all()
     print(f"⏱️ Query master_items ({len(item_codes)} codes): {time.time() - t2:.2f}s")
@@ -393,7 +399,8 @@ async def get_inbound_logs(
     username: str = Depends(login_required), 
     db: AsyncSession = Depends(get_db)
 ):
-    all_logs = await db_logs.load_log_data_db_async(db)
+    country = get_current_country(request) or "MX"
+    all_logs = await db_logs.load_log_data_db_async(db, country_code=country)
     # Convert logs dictionary list to Pydantic models or let FastAPI do it (it validates against response_model)
     # Ensure keys match InboundLogItem
     
@@ -420,9 +427,10 @@ async def get_packing_list_data(
     db: AsyncSession = Depends(get_db)
 ):
     
+    country = get_current_country(request) or "MX"
     # Obtener la auditoría
     result = await db.execute(
-        select(PickingAudit).where(PickingAudit.id == audit_id)
+        select(PickingAudit).where(PickingAudit.id == audit_id, PickingAudit.country_code == country)
     )
     audit = result.scalar_one_or_none()
     
@@ -432,7 +440,7 @@ async def get_packing_list_data(
     # Obtener los items asignados a bultos
     result = await db.execute(
         select(PickingPackageItem)
-        .where(PickingPackageItem.audit_id == audit_id)
+        .where(PickingPackageItem.audit_id == audit_id, PickingPackageItem.country_code == country)
         .order_by(PickingPackageItem.package_number, PickingPackageItem.item_code)
     )
     package_items = result.scalars().all()

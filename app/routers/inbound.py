@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi import APIRouter, Depends, HTTPException, Body, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete, desc
 from app.core.db import get_db
 from app.utils.auth import login_required, api_login_required, permission_required
+from app.utils.country import get_current_country
 from app.models.sql_models import Log
 from pydantic import BaseModel
 from typing import Optional
@@ -36,11 +37,13 @@ class UpdateLogRequest(BaseModel):
 @router.post("/log") # Alias RESTful
 async def add_log(
     data: AddLogRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     user: str = Depends(permission_required("inbound"))
 ):
+    country = get_current_country(request) or "MX"
     # Buscar info del item en el CSV
-    stock = await get_item_details_from_master_csv(data.itemCode)
+    stock = await get_item_details_from_master_csv(data.itemCode, country_code=country)
     if not stock:
         raise HTTPException(404, "Item no encontrado en maestro")
 
@@ -62,7 +65,8 @@ async def add_log(
         relocatedBin=data.relocatedBin.strip() if data.relocatedBin else '',
         timestamp=datetime.datetime.now().isoformat(), # Use ISO format for SQLite string storage
         qtyGrn=default_qty_grn,
-        difference=data.quantity - default_qty_grn
+        difference=data.quantity - default_qty_grn,
+        country_code=country
     )
     db.add(new_log)
     await db.commit()
@@ -72,12 +76,16 @@ async def add_log(
 # 2. Actualizar Registro
 @router.put("/log/{log_id}")
 async def update_log(
+    request: Request,
     log_id: int, 
     data: UpdateLogRequest, 
     db: AsyncSession = Depends(get_db),
     user: str = Depends(permission_required("inbound"))
 ):
-    log = await db.get(Log, log_id)
+    country = get_current_country(request) or "MX"
+    stmt = select(Log).where(Log.id == log_id, Log.country_code == country)
+    result = await db.execute(stmt)
+    log = result.scalar_one_or_none()
     if not log:
         raise HTTPException(404, "Log no encontrado")
     
@@ -95,33 +103,39 @@ async def update_log(
 # 3. Archivar (Limpieza de Base)
 @router.post("/archive")
 async def archive_logs(
+    request: Request,
     db: AsyncSession = Depends(get_db),
     user: str = Depends(permission_required("inbound"))
 ):
+    country = get_current_country(request) or "MX"
     now = datetime.datetime.now().isoformat()
     # Archivar todo lo que no tenga fecha de archivo
-    await db.execute(update(Log).where(Log.archived_at == None).values(archived_at=now))
+    await db.execute(update(Log).where(Log.archived_at == None, Log.country_code == country).values(archived_at=now))
     await db.commit()
     return {"message": "Base archivada", "version": now}
 
 # 4. Listar Versiones
 @router.get("/versions")
 async def get_versions(
+    request: Request,
     db: AsyncSession = Depends(get_db),
     user: str = Depends(permission_required("inbound"))
 ):
-    res = await db.execute(select(Log.archived_at).distinct().where(Log.archived_at != None).order_by(desc(Log.archived_at)))
+    country = get_current_country(request) or "MX"
+    res = await db.execute(select(Log.archived_at).distinct().where(Log.archived_at != None, Log.country_code == country).order_by(desc(Log.archived_at)))
     return res.scalars().all()
 
 
 # 5. Exportar Logs (Excel)
 @router.get("/export")
 async def export_logs(
+    request: Request,
     version: Optional[str] = None, 
     db: AsyncSession = Depends(get_db),
     user: str = Depends(permission_required("inbound"))
 ):
-    query = select(Log)
+    country = get_current_country(request) or "MX"
+    query = select(Log).where(Log.country_code == country)
     
     if version:
         query = query.where(Log.archived_at == version)

@@ -8,7 +8,7 @@ from typing import Dict, Any, Optional, List
 import datetime
 from sqlalchemy import distinct
 
-async def save_log_entry_db_async(db: AsyncSession, entry_data: Dict[str, Any]) -> Optional[int]:
+async def save_log_entry_db_async(db: AsyncSession, entry_data: Dict[str, Any], country_code: str) -> Optional[int]:
     """Guarda una entrada de log en la base de datos."""
     try:
         new_log = Log(
@@ -21,7 +21,8 @@ async def save_log_entry_db_async(db: AsyncSession, entry_data: Dict[str, Any]) 
             relocatedBin=entry_data.get('relocatedBin'),
             qtyReceived=entry_data.get('qtyReceived'),
             qtyGrn=entry_data.get('qtyGrn'),
-            difference=entry_data.get('difference')
+            difference=entry_data.get('difference'),
+            country_code=country_code
             # Nota: observaciones se omite porque no existe en tabla MySQL
         )
         db.add(new_log)
@@ -34,10 +35,10 @@ async def save_log_entry_db_async(db: AsyncSession, entry_data: Dict[str, Any]) 
         return None
 
 
-async def update_log_entry_db_async(db: AsyncSession, log_id: int, entry_data_for_db: Dict[str, Any]) -> bool:
+async def update_log_entry_db_async(db: AsyncSession, log_id: int, entry_data_for_db: Dict[str, Any], country_code: str) -> bool:
     """Actualiza una entrada de log existente."""
     try:
-        stmt = update(Log).where(Log.id == log_id).values(
+        stmt = update(Log).where(Log.id == log_id, Log.country_code == country_code).values(
             waybill=entry_data_for_db.get('waybill'),
             relocatedBin=entry_data_for_db.get('relocatedBin'),
             qtyReceived=entry_data_for_db.get('qtyReceived'),
@@ -55,11 +56,11 @@ async def update_log_entry_db_async(db: AsyncSession, log_id: int, entry_data_fo
         return False
 
 
-async def load_log_data_db_async(db: AsyncSession) -> List[Dict[str, Any]]:
+async def load_log_data_db_async(db: AsyncSession, country_code: str) -> List[Dict[str, Any]]:
     """Carga todos los logs de la base de datos."""
     try:
         # Default: Cargar solo logs activos (archived_at es NULL)
-        stmt = select(Log).where(Log.archived_at.is_(None)).order_by(Log.id.desc())
+        stmt = select(Log).where(Log.archived_at.is_(None), Log.country_code == country_code).order_by(Log.id.desc())
         result = await db.execute(stmt)
         logs = result.scalars().all()
         # Convertir a dict explícitamente porque los modelos ORM no son dicts
@@ -85,10 +86,10 @@ async def load_log_data_db_async(db: AsyncSession) -> List[Dict[str, Any]]:
         return []
 
 
-async def get_log_entry_by_id_async(db: AsyncSession, log_id: int) -> Optional[Dict[str, Any]]:
+async def get_log_entry_by_id_async(db: AsyncSession, log_id: int, country_code: str) -> Optional[Dict[str, Any]]:
     """Obtiene una entrada de log por ID."""
     try:
-        result = await db.execute(select(Log).where(Log.id == log_id))
+        result = await db.execute(select(Log).where(Log.id == log_id, Log.country_code == country_code))
         log = result.scalar_one_or_none()
         if log:
             return {
@@ -111,12 +112,13 @@ async def get_log_entry_by_id_async(db: AsyncSession, log_id: int) -> Optional[D
         return None
 
 
-async def get_total_received_for_import_reference_async(db: AsyncSession, import_reference: str, item_code: str) -> int:
+async def get_total_received_for_import_reference_async(db: AsyncSession, import_reference: str, item_code: str, country_code: str) -> int:
     """Obtiene el total recibido para una referencia de importación e item."""
     try:
         stmt = select(func.sum(Log.qtyReceived)).where(
             Log.importReference == import_reference,
             Log.itemCode == item_code,
+            Log.country_code == country_code,
             Log.archived_at.is_(None)
         )
         result = await db.execute(stmt)
@@ -127,10 +129,10 @@ async def get_total_received_for_import_reference_async(db: AsyncSession, import
         return 0
 
 
-async def delete_log_entry_db_async(db: AsyncSession, log_id: int) -> bool:
+async def delete_log_entry_db_async(db: AsyncSession, log_id: int, country_code: str) -> bool:
     """Elimina una entrada de log."""
     try:
-        stmt = delete(Log).where(Log.id == log_id)
+        stmt = delete(Log).where(Log.id == log_id, Log.country_code == country_code)
         result = await db.execute(stmt)
         await db.commit()
         return result.rowcount > 0
@@ -140,11 +142,12 @@ async def delete_log_entry_db_async(db: AsyncSession, log_id: int) -> bool:
         return False
 
 
-async def get_latest_relocated_bin_async(db: AsyncSession, item_code: str) -> Optional[str]:
+async def get_latest_relocated_bin_async(db: AsyncSession, item_code: str, country_code: str) -> Optional[str]:
     """Obtiene el último bin de reubicación para un item."""
     try:
         stmt = select(Log.relocatedBin).where(
             Log.itemCode == item_code,
+            Log.country_code == country_code,
             Log.relocatedBin.is_not(None),
             Log.relocatedBin != '',
             Log.archived_at.is_(None)
@@ -157,11 +160,11 @@ async def get_latest_relocated_bin_async(db: AsyncSession, item_code: str) -> Op
         print(f"DB Error (get_latest_relocated_bin_async): {e}")
         return None
 
-async def archive_current_logs_db_async(db: AsyncSession) -> bool:
+async def archive_current_logs_db_async(db: AsyncSession, country_code: str) -> bool:
     """Archiva todos los logs activos asignándoles la fecha actual."""
     try:
         current_time_iso = datetime.datetime.now().isoformat(timespec='seconds')
-        stmt = update(Log).where(Log.archived_at.is_(None)).values(archived_at=current_time_iso)
+        stmt = update(Log).where(Log.archived_at.is_(None), Log.country_code == country_code).values(archived_at=current_time_iso)
         result = await db.execute(stmt)
         await db.commit()
         return True # Always return true, even if 0 rows updated
@@ -170,11 +173,11 @@ async def archive_current_logs_db_async(db: AsyncSession) -> bool:
         await db.rollback()
         return False
 
-async def get_archived_versions_db_async(db: AsyncSession) -> List[str]:
+async def get_archived_versions_db_async(db: AsyncSession, country_code: str) -> List[str]:
     """Obtiene una lista de las fechas de archivado únicas."""
     try:
         # Fetch all dates (including duplicates)
-        stmt = select(Log.archived_at).where(Log.archived_at.is_not(None)).order_by(Log.archived_at.desc())
+        stmt = select(Log.archived_at).where(Log.archived_at.is_not(None), Log.country_code == country_code).order_by(Log.archived_at.desc())
         result = await db.execute(stmt)
         dates = result.scalars().all()
         
@@ -185,10 +188,10 @@ async def get_archived_versions_db_async(db: AsyncSession) -> List[str]:
         print(f"DB Error (get_archived_versions_db_async): {e}")
         return []
 
-async def load_archived_log_data_db_async(db: AsyncSession, version_date: str) -> List[Dict[str, Any]]:
+async def load_archived_log_data_db_async(db: AsyncSession, version_date: str, country_code: str) -> List[Dict[str, Any]]:
     """Carga los logs de una versión archivada específica."""
     try:
-        stmt = select(Log).where(Log.archived_at == version_date).order_by(Log.id.desc())
+        stmt = select(Log).where(Log.archived_at == version_date, Log.country_code == country_code).order_by(Log.id.desc())
         result = await db.execute(stmt)
         logs = result.scalars().all()
         return [
@@ -212,10 +215,10 @@ async def load_archived_log_data_db_async(db: AsyncSession, version_date: str) -
         print(f"DB Error (load_archived_log_data_db_async): {e}")
         return []
 
-async def load_all_logs_db_async(db: AsyncSession) -> List[Dict[str, Any]]:
+async def load_all_logs_db_async(db: AsyncSession, country_code: str) -> List[Dict[str, Any]]:
     """Carga TODOS los logs de la base de datos (activos y archivados)."""
     try:
-        stmt = select(Log).order_by(Log.id.desc())
+        stmt = select(Log).where(Log.country_code == country_code).order_by(Log.id.desc())
         result = await db.execute(stmt)
         logs = result.scalars().all()
         return [

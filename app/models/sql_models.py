@@ -12,6 +12,7 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     is_approved: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     permissions: Mapped[Optional[str]] = mapped_column(String(500), default="")
+    country_code: Mapped[str] = mapped_column(String(5), nullable=False, default="MX")
 
     reset_tokens = relationship("PasswordResetToken", back_populates="user", cascade="all, delete-orphan")
 
@@ -20,7 +21,8 @@ class User(Base):
             "id": self.id,
             "username": self.username,
             "is_approved": self.is_approved,
-            "permissions": self.permissions
+            "permissions": self.permissions,
+            "country_code": self.country_code
         }
 
 class PasswordResetToken(Base):
@@ -41,6 +43,7 @@ class Log(Base):
     __tablename__ = "logs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    country_code: Mapped[str] = mapped_column(String(5), nullable=False, default="MX", index=True)
     timestamp: Mapped[str] = mapped_column(String(50), nullable=False)
     importReference: Mapped[str] = mapped_column(String(100), nullable=False, default='')
     waybill: Mapped[Optional[str]] = mapped_column(String(100))
@@ -59,12 +62,14 @@ class AppState(Base):
     __tablename__ = "app_state"
 
     key: Mapped[str] = mapped_column(String(100), primary_key=True)
+    country_code: Mapped[str] = mapped_column(String(5), primary_key=True, nullable=False, default="MX")
     value: Mapped[Optional[str]] = mapped_column(String(255))
 
 class CountSession(Base):
     __tablename__ = "count_sessions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    country_code: Mapped[str] = mapped_column(String(5), nullable=False, default="MX", index=True)
     user_username: Mapped[str] = mapped_column(String(100), nullable=False)
     start_time: Mapped[str] = mapped_column(String(50), nullable=False)
     end_time: Mapped[Optional[str]] = mapped_column(String(50))
@@ -91,6 +96,7 @@ class RecountList(Base):
     __tablename__ = "recount_list"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    country_code: Mapped[str] = mapped_column(String(5), nullable=False, default="MX", index=True)
     item_code: Mapped[str] = mapped_column(String(100), nullable=False)
     stage_to_count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     status: Mapped[str] = mapped_column(String(50), nullable=False, default='pending')
@@ -100,6 +106,7 @@ class StockCount(Base):
     __tablename__ = "stock_counts"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    country_code: Mapped[str] = mapped_column(String(5), nullable=False, default="MX", index=True)
     session_id: Mapped[int] = mapped_column(Integer, ForeignKey("count_sessions.id"), nullable=False, index=True)
     timestamp: Mapped[str] = mapped_column(String(50), nullable=False)
     item_code: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -115,6 +122,7 @@ class CycleCount(Base):
     __tablename__ = "cycle_counts"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    country_code: Mapped[str] = mapped_column(String(5), nullable=False, default="MX", index=True)
     item_code: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     timestamp: Mapped[str] = mapped_column(String(50), nullable=False)
     abc_code: Mapped[Optional[str]] = mapped_column(String(10))
@@ -124,6 +132,7 @@ class PickingAudit(Base):
     __tablename__ = "picking_audits"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    country_code: Mapped[str] = mapped_column(String(5), nullable=False, default="MX", index=True)
     order_number: Mapped[str] = mapped_column(String(100), nullable=False)
     despatch_number: Mapped[str] = mapped_column(String(100), nullable=False)
     customer_name: Mapped[Optional[str]] = mapped_column(String(255))
@@ -140,6 +149,7 @@ class PickingAuditItem(Base):
     __tablename__ = "picking_audit_items"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    country_code: Mapped[str] = mapped_column(String(5), nullable=False, default="MX", index=True)
     audit_id: Mapped[int] = mapped_column(Integer, ForeignKey("picking_audits.id"), nullable=False, index=True)
     item_code: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(String(255))
@@ -156,6 +166,7 @@ class PickingPackageItem(Base):
     __tablename__ = "picking_package_items"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    country_code: Mapped[str] = mapped_column(String(5), nullable=False, default="MX", index=True)
     audit_id: Mapped[int] = mapped_column(Integer, ForeignKey("picking_audits.id"), nullable=False, index=True)
     package_number: Mapped[int] = mapped_column(Integer, nullable=False)
     item_code: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -168,6 +179,7 @@ class CycleCountRecording(Base):
     __tablename__ = "cycle_count_recordings"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    country_code: Mapped[str] = mapped_column(String(5), nullable=False, default="MX", index=True)
     planned_date: Mapped[str] = mapped_column(String(50), nullable=False)
     executed_date: Mapped[str] = mapped_column(String(50), nullable=False)
     item_code: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
@@ -184,6 +196,7 @@ class MasterItem(Base):
     __tablename__ = "master_items"
 
     item_code: Mapped[str] = mapped_column(String(100), primary_key=True, index=True)
+    country_code: Mapped[str] = mapped_column(String(5), primary_key=True, nullable=False, default="MX")
     description: Mapped[Optional[str]] = mapped_column(String(255))
     abc_code: Mapped[Optional[str]] = mapped_column(String(10), index=True)
     physical_qty: Mapped[int] = mapped_column(Integer, default=0)
@@ -203,6 +216,7 @@ class GRNMaster(Base):
     __tablename__ = "grn_master"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    country_code: Mapped[str] = mapped_column(String(5), nullable=False, default="MX", index=True)
     import_reference: Mapped[str] = mapped_column(String(100), index=True)
     waybill: Mapped[str] = mapped_column(String(100), index=True)
     grn_number: Mapped[str] = mapped_column(String(255), nullable=True)

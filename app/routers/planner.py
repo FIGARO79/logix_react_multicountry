@@ -24,33 +24,25 @@ router = APIRouter(prefix="/api/planner", tags=["planner"])
 
 # --- Persistencia de Configuración ---
 from app.core.config import PROJECT_ROOT
+from app.utils.country import get_current_country
 
-# --- Persistencia de Configuración ---
-CONFIG_FILE = os.path.join(PROJECT_ROOT, "static/json/planner_config.json")
-PLAN_DATA_FILE = os.path.join(PROJECT_ROOT, "static/json/planner_data.json")
+# Rutas base para JSONs (serán segmentadas por país)
+CONFIG_BASE_DIR = os.path.join(PROJECT_ROOT, "static/json")
 
-def load_config():
-    """Carga la configuración desde el archivo JSON, o usa defaults."""
-    default_config = {
-        "start_date": f"{datetime.datetime.now().year}-01-01",
-        "end_date": f"{datetime.datetime.now().year}-12-31"
+def get_planner_paths(country_code: str):
+    """Obtiene las rutas de archivos para un país específico."""
+    country_dir = os.path.join(CONFIG_BASE_DIR, country_code)
+    os.makedirs(country_dir, exist_ok=True)
+    return {
+        "config": os.path.join(country_dir, "planner_config.json"),
+        "plan": os.path.join(country_dir, "planner_data.json")
     }
-    if not os.path.exists(CONFIG_FILE):
-        return default_config
+
+def load_config(country_code: str = "MX"):
+    """Carga la configuración desde el archivo JSON del país, o usa defaults."""
+    paths = get_planner_paths(country_code)
+    config_file = paths["config"]
     
-    try:
-        with open(CONFIG_FILE, 'r') as f:
-            return json.load(f)
-    except Exception:
-        return default_config
-
-def save_config(config_data):
-    """Guarda la configuración en el archivo JSON."""
-    with open(CONFIG_FILE, 'w') as f:
-        json.dump(config_data, f, indent=4)
-
-def load_config():
-    """Carga la configuración desde el archivo JSON, o usa defaults."""
     default_holidays = [
         "2026-01-01", "2026-01-12", "2026-03-23", "2026-04-02", "2026-04-03",
         "2026-05-01", "2026-05-18", "2026-06-08", "2026-06-15", "2026-06-29",
@@ -65,86 +57,58 @@ def load_config():
     }
     
     config = default_config
-    if os.path.exists(CONFIG_FILE):
+    if os.path.exists(config_file):
         try:
-            with open(CONFIG_FILE, 'r') as f:
+            with open(config_file, 'r', encoding='utf-8') as f:
                 loaded = json.load(f)
                 config.update(loaded)
         except Exception:
             pass
             
-    # Sincronizar variable global HOLIDAYS
-    global HOLIDAYS
-    try:
-        HOLIDAYS = {datetime.datetime.strptime(d, "%Y-%m-%d").date() for d in config.get("holidays", [])}
-    except ValueError:
-        HOLIDAYS = set() # Fallback si hay error en formato
-        
     return config
 
-def save_config(config_data):
-    """Guarda la configuración en el archivo JSON."""
-    with open(CONFIG_FILE, 'w') as f:
+def save_config(config_data, country_code: str = "MX"):
+    """Guarda la configuración en el archivo JSON del país."""
+    paths = get_planner_paths(country_code)
+    config_file = paths["config"]
+    with open(config_file, 'w', encoding='utf-8') as f:
         json.dump(config_data, f, indent=4)
-        
-    # Sincronizar variable global HOLIDAYS
-    global HOLIDAYS
-    try:
-        HOLIDAYS = {datetime.datetime.strptime(d, "%Y-%m-%d").date() for d in config_data.get("holidays", [])}
-    except ValueError:
-        pass
 
-def load_plan_data():
-    """Carga los datos del plan calculeado/guardado."""
-    if not os.path.exists(PLAN_DATA_FILE):
+def load_plan_data(country_code: str = "MX"):
+    """Carga los datos del plan calculeado/guardado para el país."""
+    paths = get_planner_paths(country_code)
+    plan_file = paths["plan"]
+    if not os.path.exists(plan_file):
         return None
     try:
-        with open(PLAN_DATA_FILE, 'r') as f:
+        with open(plan_file, 'r', encoding='utf-8') as f:
             return json.load(f)
     except Exception:
         return None
 
-def save_plan_data(data):
-    """Guarda los datos del plan en JSON."""
-    with open(PLAN_DATA_FILE, 'w') as f:
+def save_plan_data(data, country_code: str = "MX"):
+    """Guarda los datos del plan en JSON para el país."""
+    paths = get_planner_paths(country_code)
+    plan_file = paths["plan"]
+    with open(plan_file, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=4)
 
-# Cargar configuración inicial
-PLANNER_CONFIG = load_config()
-
-# Festivos (Default y Global)
-HOLIDAYS = set() # This will be populated by load_config()
-
-class PlannerConfigModel(BaseModel):
-    start_date: str
-    end_date: str
-    holidays: list[str]
-
-# Configuración de frecuencias (Reglas de Negocio)
-FREQUENCY_MAP = {
-    'A': 3,
-    'B': 2,
-    'C': 1
-}
-
-
-
-def get_working_days(start_date: datetime.date, end_date: datetime.date):
-    """Genera una lista de días hábiles (Lunes-Viernes) entre dos fechas, excluyendo festivos."""
+def get_working_days(start_date: datetime.date, end_date: datetime.date, holidays: set):
+    """Genera una lista de días hábiles, excluyendo festivos del país."""
     working_days = []
     current_date = start_date
     while current_date <= end_date:
-        # 0=Lunes, 4=Viernes. Excluir fines de semana y festivos
-        if current_date.weekday() < 5 and current_date not in HOLIDAYS:
+        if current_date.weekday() < 5 and current_date not in holidays:
             working_days.append(current_date)
         current_date += datetime.timedelta(days=1)
     return working_days
 
-async def calculate_count_plan_data(start_date: str, end_date: str, db: AsyncSession):
+async def calculate_count_plan_data(start_date: str, end_date: str, db: AsyncSession, country_code: str):
     """
-    Lógica central para calcular el plan de conteos.
-    Devuelve un DataFrame con el plan.
+    Lógica central para calcular el plan de conteos filtrado por país.
     """
+    config = load_config(country_code)
+    holidays = {datetime.datetime.strptime(d, "%Y-%m-%d").date() for d in config.get("holidays", [])}
     try:
         s_date = datetime.datetime.strptime(start_date, '%Y-%m-%d').date()
         e_date = datetime.datetime.strptime(end_date, '%Y-%m-%d').date()
@@ -154,8 +118,8 @@ async def calculate_count_plan_data(start_date: str, end_date: str, db: AsyncSes
     if s_date > e_date:
         raise HTTPException(status_code=400, detail="La fecha de inicio debe ser anterior a la fecha de fin.")
 
-    # 1. Obtener todos los items del maestro desde DB (Optimizado)
-    stmt_master = select(MasterItem).where(MasterItem.physical_qty > 0)
+    # 1. Obtener todos los items del maestro desde DB filtrados por país
+    stmt_master = select(MasterItem).where(MasterItem.physical_qty > 0, MasterItem.country_code == country_code)
     result_master = await db.execute(stmt_master)
     items_db = result_master.scalars().all()
     
@@ -186,7 +150,7 @@ async def calculate_count_plan_data(start_date: str, end_date: str, db: AsyncSes
     
     query = (
         select(CycleCount.item_code, func.count(CycleCount.id).label("count"))
-        .where(CycleCount.timestamp >= start_of_year)
+        .where(CycleCount.timestamp >= start_of_year, CycleCount.country_code == country_code)
         .group_by(CycleCount.item_code)
     )
     
@@ -217,7 +181,7 @@ async def calculate_count_plan_data(start_date: str, end_date: str, db: AsyncSes
         return pd.DataFrame(columns=["Item Code", "ABC Code", "Description", "Planned Date"])
     
     # 4. Distribuir en días hábiles
-    working_days = get_working_days(s_date, e_date)
+    working_days = get_working_days(s_date, e_date, holidays)
     if not working_days:
         raise HTTPException(status_code=400, detail="No hay días hábiles en el rango seleccionado (revise festivos y fines de semana).")
         
@@ -243,11 +207,12 @@ async def calculate_count_plan_data(start_date: str, end_date: str, db: AsyncSes
 async def preview_count_plan(
     start_date: str = Query(..., description="Fecha inicio (YYYY-MM-DD)"),
     end_date: str = Query(..., description="Fecha fin (YYYY-MM-DD)"),
-    username: str = Depends(permission_required("planner")),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    request: Request = None
 ):
     """Devuelve el plan en formato JSON para previsualización."""
-    df_output = await calculate_count_plan_data(start_date, end_date, db)
+    country = get_current_country(request) or "MX"
+    df_output = await calculate_count_plan_data(start_date, end_date, db, country)
     
     # Convertir fechas a string para JSON
     df_output['Planned Date'] = df_output['Planned Date'].astype(str)
@@ -270,11 +235,12 @@ async def preview_count_plan(
 async def generate_count_plan(
     start_date: str = Query(..., description="Fecha inicio (YYYY-MM-DD)"),
     end_date: str = Query(..., description="Fecha fin (YYYY-MM-DD)"),
-    username: str = Depends(permission_required("planner")),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    request: Request = None
 ):
     """Genera y descarga el Excel."""
-    df_output = await calculate_count_plan_data(start_date, end_date, db)
+    country = get_current_country(request) or "MX"
+    df_output = await calculate_count_plan_data(start_date, end_date, db, country)
     
     # 5. Generar Excel
     output = BytesIO()
@@ -305,52 +271,52 @@ async def generate_count_plan(
     )
 
 @router.get("/config")
-async def get_planner_config(username: str = Depends(permission_required("planner"))):
-    """Obtiene la configuración actual (fechas)."""
-    return PLANNER_CONFIG
+async def get_planner_config(request: Request, username: str = Depends(permission_required("planner"))):
+    """Obtiene la configuración actual para el país."""
+    country = get_current_country(request) or "MX"
+    return load_config(country)
 
 @router.post("/config")
 async def update_planner_config(
+    request: Request,
     config: PlannerConfigModel,
     username: str = Depends(permission_required("planner"))
 ):
-    """Actualiza la configuración (fechas) y la guarda."""
+    """Actualiza la configuración y la guarda para el país."""
+    country = get_current_country(request) or "MX"
     try:
         # Validar formato de fechas
         datetime.datetime.strptime(config.start_date, '%Y-%m-%d')
         datetime.datetime.strptime(config.end_date, '%Y-%m-%d')
-        # Validar festivos
         for h in config.holidays:
              datetime.datetime.strptime(h, '%Y-%m-%d')
         
-        # Actualizar memoria y archivo
-        global PLANNER_CONFIG
-        PLANNER_CONFIG = config.dict()
-        save_config(PLANNER_CONFIG)
-        
-        return {"message": "Configuración guardada correctamente", "config": PLANNER_CONFIG}
+        save_config(config.dict(), country)
+        return {"message": "Configuración guardada correctamente", "config": config.dict()}
     except ValueError:
         raise HTTPException(status_code=400, detail="Formato de fecha inválido. Use YYYY-MM-DD.")
 
 
 @router.get("/current_plan")
-async def get_current_plan(username: str = Depends(permission_required("planner"))):
-    """Obtiene el plan guardado (persistente)."""
-    data = load_plan_data()
+async def get_current_plan(request: Request, username: str = Depends(permission_required("planner"))):
+    """Obtiene el plan guardado (persistente) para el país."""
+    country = get_current_country(request) or "MX"
+    data = load_plan_data(country)
     if not data:
-        return {} # Retorno vacío si no hay plan
+        return {}
     return data
 
 @router.post("/update_plan")
 async def update_count_plan(
+    request: Request,
     start_date: str = Query(..., description="Fecha inicio (YYYY-MM-DD)"),
     end_date: str = Query(..., description="Fecha fin (YYYY-MM-DD)"),
     username: str = Depends(permission_required("planner")),
     db: AsyncSession = Depends(get_db)
 ):
-    """Calcula el plan (igual que preview) PERO lo guarda en JSON para persistencia."""
-    # 1. Calcular usando la misma logica
-    df_output = await calculate_count_plan_data(start_date, end_date, db)
+    """Calcula y guarda el plan para el país."""
+    country = get_current_country(request) or "MX"
+    df_output = await calculate_count_plan_data(start_date, end_date, db, country)
     
     # 2. Formatear igual que preview
     df_output['Planned Date'] = df_output['Planned Date'].astype(str)
@@ -366,7 +332,7 @@ async def update_count_plan(
     }
     
     # 3. Guardar
-    save_plan_data(result_data)
+    save_plan_data(result_data, country)
     
     return result_data
     return result_data
@@ -377,11 +343,13 @@ async def update_count_plan(
 @router.get("/execution/daily_items")
 async def get_daily_items_for_execution(
     date: str = Query(..., description="Fecha de ejecución (YYYY-MM-DD)"),
+    request: Request = None,
     username: str = Depends(permission_required("planner")),
     db: AsyncSession = Depends(get_db)
 ):
-    """Obtiene los items planificados para una fecha específica, enriquecidos con datos del maestro."""
-    plan_data = load_plan_data()
+    """Obtiene los items planificados para el país en la fecha específica."""
+    country = get_current_country(request) or "MX"
+    plan_data = load_plan_data(country)
     if not plan_data or "details" not in plan_data:
         return {"items": [], "has_previous_counts": False, "previous_count": 0}
     
@@ -397,15 +365,15 @@ async def get_daily_items_for_execution(
     
     count_check = await db.execute(
         select(func.count(CycleCountRecording.id))
-        .where(CycleCountRecording.planned_date == date)
+        .where(CycleCountRecording.planned_date == date, CycleCountRecording.country_code == country)
     )
     previous_count = count_check.scalar() or 0
     has_previous = previous_count > 0
     
-    # Enriquecer con datos del maestro (Bin y Stock Teórico) desde DB
+    # Enriquecer con datos del maestro filtrados por país
     enrich_codes = [item.get("Item Code") for item in daily_items]
     
-    stmt = select(MasterItem).where(MasterItem.item_code.in_(enrich_codes))
+    stmt = select(MasterItem).where(MasterItem.item_code.in_(enrich_codes), MasterItem.country_code == country)
     result = await db.execute(stmt)
     db_items_map = {item.item_code: item for item in result.scalars().all()}
     
@@ -443,6 +411,7 @@ async def get_daily_items_for_execution(
             select(func.count(CycleCountRecording.id))
             .where(
                 CycleCountRecording.planned_date == date,
+                CycleCountRecording.country_code == country,
                 CycleCountRecording.difference != 0
             )
         )
@@ -459,15 +428,17 @@ async def get_daily_items_for_execution(
 @router.get("/execution/items_with_differences")
 async def get_items_with_differences(
     date: str = Query(..., description="Fecha planificada (YYYY-MM-DD)"),
+    request: Request = None,
     username: str = Depends(permission_required("planner")),
     db: AsyncSession = Depends(get_db)
 ):
-    """Obtiene los items que tienen diferencias en conteos previos para la fecha especificada."""
-    from app.models.sql_models import CycleCountRecording
+    """Obtiene las diferencias para el país."""
+    country = get_current_country(request) or "MX"
     
     # Obtener items con diferencias de conteos previos
     stmt = select(CycleCountRecording).where(
         CycleCountRecording.planned_date == date,
+        CycleCountRecording.country_code == country,
         CycleCountRecording.difference != 0
     )
     result = await db.execute(stmt)
@@ -482,8 +453,8 @@ async def get_items_with_differences(
     # Obtener item_codes únicos
     item_codes = list(set([rec.item_code for rec in previous_counts]))
     
-    # Enriquecer con datos actuales del maestro
-    master_stmt = select(MasterItem).where(MasterItem.item_code.in_(item_codes))
+    # Enriquecer con datos actuales del maestro del país
+    master_stmt = select(MasterItem).where(MasterItem.item_code.in_(item_codes), MasterItem.country_code == country)
     master_result = await db.execute(master_stmt)
     master_map = {item.item_code: item for item in master_result.scalars().all()}
     
@@ -532,12 +503,13 @@ async def get_items_with_differences(
 
 @router.post("/execution/save")
 async def save_daily_execution(
+    request: Request,
     execution_data: CountExecutionRequest,
     username: str = Depends(permission_required("planner")),
     db: AsyncSession = Depends(get_db)
 ):
-    """Guarda los conteos ejecutados del día en la tabla dedicada.
-    Si el item ya fue contado hoy, SUMA la cantidad al registro existente."""
+    """Guarda los conteos ejecutados del día. Filtra por país."""
+    country = get_current_country(request) or "MX"
     try:
         saved_count = 0
         updated_count = 0
@@ -550,7 +522,8 @@ async def save_daily_execution(
             # Buscar si ya existe un registro para este item en la fecha planificada
             existing_query = select(CycleCountRecording).where(
                 CycleCountRecording.item_code == item.item_code,
-                CycleCountRecording.planned_date == execution_data.date
+                CycleCountRecording.planned_date == execution_data.date,
+                CycleCountRecording.country_code == country
             )
             result = await db.execute(existing_query)
             existing_record = result.scalar_one_or_none()
@@ -576,7 +549,8 @@ async def save_daily_execution(
                     physical_qty=physical,
                     difference=diff,
                     username=username,
-                    abc_code=item.abc_code
+                    abc_code=item.abc_code,
+                    country_code=country
                 )
                 db.add(new_record)
                 saved_count += 1
@@ -598,16 +572,18 @@ async def save_daily_execution(
 
 @router.get("/execution/stats")
 async def get_execution_stats(
+    request: Request,
     year: int = Query(datetime.datetime.now().year),
     username: str = Depends(permission_required("planner")),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Obtiene estadísticas de ejecución y delta agrupadas por mes y categoría ABC.
-    Basado en la tabla CycleCountRecording.
-    """
-    # Consultar todos los registros del año
-    query = select(CycleCountRecording).where(CycleCountRecording.executed_date.like(f"{year}-%"))
+    """Estadísticas filtradas por país."""
+    country = get_current_country(request) or "MX"
+    # Consultar todos los registros del año y país
+    query = select(CycleCountRecording).where(
+        CycleCountRecording.executed_date.like(f"{year}-%"),
+        CycleCountRecording.country_code == country
+    )
     result = await db.execute(query)
     records = result.scalars().all()
     
@@ -662,19 +638,16 @@ class CycleCountDifferenceResponse(BaseModel):
 
 @router.get('/cycle_count_differences')
 async def get_cycle_count_differences(
+    request: Request,
     year: int = Query(None),
     month: int = Query(None),
     only_differences: bool = Query(True),
     username: str = Depends(permission_required("planner")),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Obtiene un listado de conteos cíclicos.
-    Permite filtrar por año y mes.
-    - only_differences=True (default): Solo registros con difference != 0
-    - only_differences=False: Todos los registros
-    """
-    query = select(CycleCountRecording)
+    country = get_current_country(request) or "MX"
+    """Listado filtrado por país."""
+    query = select(CycleCountRecording).where(CycleCountRecording.country_code == country)
     
     # Filtrar solo si hay diferencias
     if only_differences:
@@ -721,15 +694,17 @@ class UpdateCycleCountDifferenceRequest(BaseModel):
 async def update_cycle_count_difference(
     recording_id: int,
     data: UpdateCycleCountDifferenceRequest,
+    request: Request,
     username: str = Depends(permission_required("planner")),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Actualiza la cantidad física verificada de un conteo cíclico.
-    Recalcula automáticamente la diferencia.
-    """
+    """Actualiza diferencia para el país."""
+    country = get_current_country(request) or "MX"
     result = await db.execute(
-        select(CycleCountRecording).where(CycleCountRecording.id == recording_id)
+        select(CycleCountRecording).where(
+            CycleCountRecording.id == recording_id,
+            CycleCountRecording.country_code == country
+        )
     )
     record = result.scalar_one_or_none()
     

@@ -20,6 +20,7 @@ from app.core.templates import templates
 from app.services.csv_handler import master_qty_map
 from app.services import db_counts
 from app.utils.auth import login_required, admin_login_required, permission_required
+from app.utils.country import get_current_country
 from app.models.sql_models import AppState, StockCount, CountSession, RecountList, SessionLocation, MasterItem
 from app.services.csv_to_db import sync_master_csv_to_db
 
@@ -28,8 +29,8 @@ router = APIRouter(tags=["inventory"])
 async_engine = create_async_engine(ASYNC_DB_URL)
 
 
-async def get_inventory_summary_stats(db: AsyncSession) -> Optional[Dict[str, Any]]:
-    """Calcula y devuelve un resumen de estadísticas para el panel de admin de inventario."""
+async def get_inventory_summary_stats(db: AsyncSession, country_code: str) -> Optional[Dict[str, Any]]:
+    """Calcula y devuelve un resumen de estadísticas para el panel de admin de inventario del país."""
     summary = {
         'general': {
             'total_items_master': 0,
@@ -39,8 +40,9 @@ async def get_inventory_summary_stats(db: AsyncSession) -> Optional[Dict[str, An
     
     try:
         # --- Estadísticas Generales (del maestro de items) ---
-        if master_qty_map:
-            total_items_with_stock = sum(1 for qty in master_qty_map.values() if qty is not None and qty > 0)
+        country_master_qty = master_qty_map.get(country_code, {})
+        if country_master_qty:
+            total_items_with_stock = sum(1 for qty in country_master_qty.values() if qty is not None and qty > 0)
             summary['general']['total_items_master'] = total_items_with_stock
 
         # --- Estadísticas por Etapa ---
@@ -48,7 +50,7 @@ async def get_inventory_summary_stats(db: AsyncSession) -> Optional[Dict[str, An
             # Items contados en esta etapa
             stmt_items_counted = select(func.count(func.distinct(StockCount.item_code))).\
                 join(CountSession, StockCount.session_id == CountSession.id).\
-                where(CountSession.inventory_stage == stage_num)
+                where(CountSession.inventory_stage == stage_num, CountSession.country_code == country_code, StockCount.country_code == country_code)
             
             items_counted = (await db.execute(stmt_items_counted)).scalar() or 0
 
@@ -59,14 +61,14 @@ async def get_inventory_summary_stats(db: AsyncSession) -> Optional[Dict[str, An
             # Total de unidades contadas
             stmt_total_units = select(func.sum(StockCount.counted_qty)).\
                 join(CountSession, StockCount.session_id == CountSession.id).\
-                where(CountSession.inventory_stage == stage_num)
+                where(CountSession.inventory_stage == stage_num, CountSession.country_code == country_code, StockCount.country_code == country_code)
             
             total_units_counted = (await db.execute(stmt_total_units)).scalar() or 0
             
             # Calcular diferencias para esta etapa
             stmt_diff = select(StockCount.item_code, func.sum(StockCount.counted_qty).label('total_counted')).\
                 join(CountSession, StockCount.session_id == CountSession.id).\
-                where(CountSession.inventory_stage == stage_num).\
+                where(CountSession.inventory_stage == stage_num, CountSession.country_code == country_code, StockCount.country_code == country_code).\
                 group_by(StockCount.item_code)
             
             counted_items_result = (await db.execute(stmt_diff)).all()
@@ -74,7 +76,7 @@ async def get_inventory_summary_stats(db: AsyncSession) -> Optional[Dict[str, An
 
             items_with_discrepancy = 0
             for item_code, total_counted in counted_items_map.items():
-                system_qty_raw = master_qty_map.get(item_code)
+                system_qty_raw = country_master_qty.get(item_code)
                 system_qty = 0
                 if system_qty_raw is not None:
                     try:
@@ -108,7 +110,7 @@ async def get_inventory_summary_stats(db: AsyncSession) -> Optional[Dict[str, An
 
         # --- Items en lista de reconteo (para etapas futuras) ---
         for stage_to_check in range(2, 5):
-            stmt_recount = select(func.count(RecountList.item_code)).where(RecountList.stage_to_count == stage_to_check)
+            stmt_recount = select(func.count(RecountList.item_code)).where(RecountList.stage_to_count == stage_to_check, RecountList.country_code == country_code)
             items_in_recount_list = (await db.execute(stmt_recount)).scalar() or 0
             
             if stage_to_check in summary['stages']:
@@ -118,7 +120,7 @@ async def get_inventory_summary_stats(db: AsyncSession) -> Optional[Dict[str, An
                 summary['stages'][stage_to_check] = { 'items_in_recount_list': items_in_recount_list }
 
     except Exception as e:
-        print(f"Error al calcular estadísticas de inventario: {e}")
+        print(f"Error al calcular estadísticas de inventario para {country_code}: {e}")
         return None
 
     return summary
@@ -135,14 +137,14 @@ async def redirect_admin_inventory():
 @router.get('/admin/inventory', response_class=HTMLResponse, name='admin_inventory')
 async def admin_inventory_get(request: Request, user: str = Depends(permission_required("inventory")), db: AsyncSession = Depends(get_db)):
     """Página principal de administración de inventario."""
-    # admin middleware check replaced by permission_required
+    country = get_current_country(request) or "MX"
     
-    result = await db.execute(select(AppState).where(AppState.key == 'current_inventory_stage'))
+    result = await db.execute(select(AppState).where(AppState.key == 'current_inventory_stage', AppState.country_code == country))
     stage = result.scalar_one_or_none()
     
     if not stage:
         # Si no existe, inicializamos a etapa 0 (inactivo)
-        new_stage = AppState(key='current_inventory_stage', value='0')
+        new_stage = AppState(key='current_inventory_stage', value='0', country_code=country)
         db.add(new_stage)
         await db.commit()
         await db.refresh(new_stage)
@@ -151,7 +153,7 @@ async def admin_inventory_get(request: Request, user: str = Depends(permission_r
     message = request.query_params.get('message')
     error = request.query_params.get('error')
     
-    summary_stats = await get_inventory_summary_stats(db)
+    summary_stats = await get_inventory_summary_stats(db, country)
 
     return templates.TemplateResponse('admin_inventory.html', {
         "request": request, 
@@ -167,28 +169,27 @@ async def start_inventory_stage_1(request: Request, user: str = Depends(permissi
     """Inicia un nuevo ciclo de inventario en Etapa 1."""
     
     try:
-        print("Limpiando tablas de inventario para un nuevo ciclo...")
-        await db.execute(delete(StockCount))
-        await db.execute(delete(CountSession))
-        await db.execute(delete(SessionLocation))
-        await db.execute(delete(RecountList))
+        country = get_current_country(request) or "MX"
+        print(f"Limpiando tablas de inventario para un nuevo ciclo en {country}...")
+        await db.execute(delete(StockCount).where(StockCount.country_code == country))
+        await db.execute(delete(CountSession).where(CountSession.country_code == country))
+        await db.execute(delete(SessionLocation).where(SessionLocation.country_code == country))
+        await db.execute(delete(RecountList).where(RecountList.country_code == country))
         
-        # MySQL no requiere resetear autoincrement como SQLite
-        # Los IDs continuarán desde donde quedaron
-        print("Tablas de inventario limpiadas.")
+        print(f"Tablas de inventario limpiadas para {country}.")
 
         # Sincronizar maestro de items desde CSV a DB
-        print("Sincronizando maestro de items...")
-        await sync_master_csv_to_db(db)
-        print("Sincronización completada.")
+        print(f"Sincronizando maestro de items para {country}...")
+        await sync_master_csv_to_db(db, country_code=country)
+        print(f"Sincronización completada para {country}.")
 
         # Actualizar estado
-        stmt_update = update(AppState).where(AppState.key == 'current_inventory_stage').values(value='1')
+        stmt_update = update(AppState).where(AppState.key == 'current_inventory_stage', AppState.country_code == country).values(value='1')
         await db.execute(stmt_update)
         
         await db.commit()
         
-        query_params = urlencode({"message": "Inventario reiniciado en Etapa 1. Todos los datos y contadores han sido reseteados."})
+        query_params = urlencode({"message": f"Inventario reiniciado en Etapa 1 para {country}. Todos los datos han sido reseteados."})
         return RedirectResponse(url=f"/admin/inventory?{query_params}", status_code=status.HTTP_302_FOUND)
     except Exception as e:
         query_params = urlencode({"error": f"Error de base de datos: {e}"})
@@ -198,43 +199,44 @@ async def start_inventory_stage_1(request: Request, user: str = Depends(permissi
 @router.post('/admin/inventory/advance/{next_stage}', name='advance_inventory_stage')
 async def advance_inventory_stage(request: Request, next_stage: int, user: str = Depends(permission_required("inventory")), db: AsyncSession = Depends(get_db)):
     """Avanza el inventario a la siguiente etapa."""
-
+    country = get_current_country(request) or "MX"
     prev_stage = next_stage - 1
     
     try:
         # Calcular items contados en etapa previa
         stmt = select(StockCount.item_code, func.sum(StockCount.counted_qty).label('total_counted')).\
             join(CountSession, StockCount.session_id == CountSession.id).\
-            where(CountSession.inventory_stage == prev_stage).\
+            where(CountSession.inventory_stage == prev_stage, CountSession.country_code == country, StockCount.country_code == country).\
             group_by(StockCount.item_code)
         
         result = await db.execute(stmt)
         counted_items = result.all()
         
         # Limpiar lista de reconteo anterior para esta etapa
-        await db.execute(delete(RecountList).where(RecountList.stage_to_count == next_stage))
+        await db.execute(delete(RecountList).where(RecountList.stage_to_count == next_stage, RecountList.country_code == country))
 
         items_for_recount = []
+        country_master_qty = master_qty_map.get(country, {})
         for item in counted_items:
             item_code = item.item_code
             total_counted = item.total_counted
             
-            system_qty = master_qty_map.get(item_code)
+            system_qty = country_master_qty.get(item_code)
             system_qty = int(system_qty) if system_qty is not None else 0
 
             if total_counted != system_qty:
-                items_for_recount.append({"item_code": item_code, "stage_to_count": next_stage})
+                items_for_recount.append({"item_code": item_code, "stage_to_count": next_stage, "country_code": country})
 
         if items_for_recount:
             await db.execute(insert(RecountList), items_for_recount)
 
         # Actualizar estado de la aplicación
-        stmt_update = update(AppState).where(AppState.key == 'current_inventory_stage').values(value=str(next_stage))
+        stmt_update = update(AppState).where(AppState.key == 'current_inventory_stage', AppState.country_code == country).values(value=str(next_stage))
         await db.execute(stmt_update)
         
         await db.commit()
 
-        message = f"Proceso completado. Etapa de inventario avanzada a {next_stage}. Se encontraron {len(items_for_recount)} items con diferencias."
+        message = f"Proceso completado para {country}. Etapa de inventario avanzada a {next_stage}. Se encontraron {len(items_for_recount)} items con diferencias."
         query_params = urlencode({"message": message})
         return RedirectResponse(url=f"/admin/inventory?{query_params}", status_code=status.HTTP_302_FOUND)
 
@@ -245,14 +247,15 @@ async def advance_inventory_stage(request: Request, next_stage: int, user: str =
 
 @router.post('/admin/inventory/finalize', name='finalize_inventory')
 async def finalize_inventory(request: Request, user: str = Depends(permission_required("inventory")), db: AsyncSession = Depends(get_db)):
-    """Finaliza el ciclo de inventario."""
+    """Finaliza el ciclo de inventario para el país."""
     
     try:
-        stmt_update = update(AppState).where(AppState.key == 'current_inventory_stage').values(value='0')
+        country = get_current_country(request) or "MX"
+        stmt_update = update(AppState).where(AppState.key == 'current_inventory_stage', AppState.country_code == country).values(value='0')
         await db.execute(stmt_update)
         await db.commit()
         
-        query_params = urlencode({"message": "Ciclo de inventario finalizado y cerrado."})
+        query_params = urlencode({"message": f"Ciclo de inventario finalizado y cerrado para {country}."})
         return RedirectResponse(url=f"/admin/inventory?{query_params}", status_code=status.HTTP_302_FOUND)
     except Exception as e:
         query_params = urlencode({"error": f"Error de base de datos: {e}"})
@@ -262,7 +265,7 @@ async def finalize_inventory(request: Request, user: str = Depends(permission_re
 @router.get('/admin/inventory/report', name='generate_inventory_report')
 async def generate_inventory_report(request: Request, user: str = Depends(permission_required("inventory"))):
     """Genera un reporte Excel del inventario."""
-
+    country = get_current_country(request) or "MX"
     try:
         # Usamos pandas read_sql con connection para queries complejos de reporte
         async with async_engine.connect() as conn:
@@ -274,12 +277,13 @@ async def generate_inventory_report(request: Request, user: str = Depends(permis
                     sc.counted_qty
                 FROM stock_counts sc
                 JOIN count_sessions cs ON sc.session_id = cs.id
+                WHERE sc.country_code = :country AND cs.country_code = :country
             """
             # Pandas read_sql espera una conexión raw o compatible, usamos run_sync
-            all_counts_df = await conn.run_sync(lambda sync_conn: pd.read_sql_query(text(query), sync_conn))
+            all_counts_df = await conn.run_sync(lambda sync_conn: pd.read_sql_query(text(query), sync_conn, params={"country": country}))
 
         if all_counts_df.empty:
-            query_params = urlencode({"error": "No hay datos de conteo para generar un informe."})
+            query_params = urlencode({"error": f"No hay datos de conteo para generar un informe en {country}."})
             return RedirectResponse(url=f"/admin/inventory?{query_params}", status_code=status.HTTP_302_FOUND)
 
         stage_counts = all_counts_df.groupby(['item_code', 'item_description', 'inventory_stage'])['counted_qty'].sum().reset_index()
@@ -293,7 +297,8 @@ async def generate_inventory_report(request: Request, user: str = Depends(permis
 
         pivot_df.columns = [f'Conteo Etapa {int(col)}' for col in pivot_df.columns]
         
-        system_qtys = pd.Series(master_qty_map, name='Cantidad Sistema').astype('float64').fillna(0)
+        country_master_qty = master_qty_map.get(country, {})
+        system_qtys = pd.Series(country_master_qty, name='Cantidad Sistema').astype('float64').fillna(0)
         
         report_df = pivot_df.join(system_qtys, on='item_code').fillna(0)
         report_df.rename_axis(index={'item_code': 'Item Code', 'item_description': 'Description'}, inplace=True)
@@ -343,12 +348,13 @@ async def generate_inventory_report(request: Request, user: str = Depends(permis
 @router.get('/api/export_recount_list/{stage_number}', name='export_recount_list')
 async def export_recount_list(request: Request, stage_number: int, user: str = Depends(permission_required("inventory")), db: AsyncSession = Depends(get_db)):
     """Exporta la lista de items a recontar para una etapa específica."""
+    country = get_current_country(request) or "MX"
 
-    result = await db.execute(select(RecountList.item_code).where(RecountList.stage_to_count == stage_number))
+    result = await db.execute(select(RecountList.item_code).where(RecountList.stage_to_count == stage_number, RecountList.country_code == country))
     items_to_recount = result.all() # list of Row objects
 
     if not items_to_recount:
-        raise HTTPException(status_code=404, detail=f"No hay items en la lista de reconteo para la Etapa {stage_number}.")
+        raise HTTPException(status_code=404, detail=f"No hay items en la lista de reconteo para la Etapa {stage_number} en {country}.")
 
     # Importar la función para obtener detalles del item
     from app.services.csv_handler import get_item_details_from_master_csv
@@ -356,7 +362,7 @@ async def export_recount_list(request: Request, stage_number: int, user: str = D
     enriched_data = []
     for row in items_to_recount:
         item_code = row.item_code
-        details = await get_item_details_from_master_csv(item_code)
+        details = await get_item_details_from_master_csv(item_code, country_code=country)
         if details:
             enriched_data.append({
                 'Código de Item': item_code,
@@ -375,8 +381,8 @@ async def export_recount_list(request: Request, stage_number: int, user: str = D
     
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name=f'Reconteo_Etapa_{stage_number}')
-        worksheet = writer.sheets[f'Reconteo_Etapa_{stage_number}']
+        df.to_excel(writer, index=False, sheet_name=f'Reconteo_{country}_Et{stage_number}')
+        worksheet = writer.sheets[f'Reconteo_{country}_Et{stage_number}']
         for i, col_name in enumerate(df.columns):
             column_letter = get_column_letter(i + 1)
             max_len = max(df[col_name].astype(str).map(len).max(), len(col_name)) + 2
@@ -384,7 +390,7 @@ async def export_recount_list(request: Request, stage_number: int, user: str = D
     
     output.seek(0)
     timestamp_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"lista_reconteo_etapa_{stage_number}_{timestamp_str}.xlsx"
+    filename = f"lista_reconteo_{country}_etapa_{stage_number}_{timestamp_str}.xlsx"
     return Response(
         content=output.getvalue(),
         media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -395,46 +401,51 @@ async def export_recount_list(request: Request, stage_number: int, user: str = D
 # ===== APIs PARA REACT ADMIN INVENTORY =====
 
 @router.get('/api/admin/inventory/summary')
-async def get_inventory_summary_api(user: str = Depends(permission_required("inventory")), db: AsyncSession = Depends(get_db)):
+async def get_inventory_summary_api(request: Request, user: str = Depends(permission_required("inventory")), db: AsyncSession = Depends(get_db)):
     """API: Obtiene el resumen del estado del inventario."""
-    stats = await get_inventory_summary_stats(db)
+    country = get_current_country(request) or "MX"
+    stats = await get_inventory_summary_stats(db, country)
     
     # Obtener estado actual
-    result = await db.execute(select(AppState).where(AppState.key == 'current_inventory_stage'))
+    result = await db.execute(select(AppState).where(AppState.key == 'current_inventory_stage', AppState.country_code == country))
     stage_state = result.scalar_one_or_none()
     current_stage = int(stage_state.value) if stage_state else 0
     
+    from fastapi.responses import JSONResponse
     return JSONResponse(content={
         "stage": current_stage,
         "stats": stats
     })
 
 @router.post('/api/admin/inventory/start_stage_1')
-async def start_inventory_stage_1_api(user: str = Depends(permission_required("inventory")), db: AsyncSession = Depends(get_db)):
+async def start_inventory_stage_1_api(request: Request, user: str = Depends(permission_required("inventory")), db: AsyncSession = Depends(get_db)):
     """API: Inicia Etapa 1."""
+    country = get_current_country(request) or "MX"
     # Reset Current Stage to 1
-    result = await db.execute(select(AppState).where(AppState.key == 'current_inventory_stage'))
+    result = await db.execute(select(AppState).where(AppState.key == 'current_inventory_stage', AppState.country_code == country))
     stage_state = result.scalar_one_or_none()
     if not stage_state:
-        stage_state = AppState(key='current_inventory_stage', value='1')
+        stage_state = AppState(key='current_inventory_stage', value='1', country_code=country)
         db.add(stage_state)
     else:
         stage_state.value = '1'
     
     # Limpiar tablas (logica simplificada de start_inventory_stage_1)
-    await db.execute(delete(StockCount))
-    await db.execute(delete(CountSession))
-    await db.execute(delete(SessionLocation))
-    await db.execute(delete(RecountList))
+    await db.execute(delete(StockCount).where(StockCount.country_code == country))
+    await db.execute(delete(CountSession).where(CountSession.country_code == country))
+    await db.execute(delete(SessionLocation).where(SessionLocation.country_code == country))
+    await db.execute(delete(RecountList).where(RecountList.country_code == country))
     
     await db.commit()
-    return JSONResponse(content={"message": "Inventario Etapa 1 iniciado correctamente", "stage": 1})
+    from fastapi.responses import JSONResponse
+    return JSONResponse(content={"message": f"Inventario Etapa 1 en {country} iniciado correctamente", "stage": 1})
 
 @router.post('/api/admin/inventory/advance_stage/{next_stage}')
-async def advance_inventory_stage_api(next_stage: int, user: str = Depends(permission_required("inventory")), db: AsyncSession = Depends(get_db)):
+async def advance_inventory_stage_api(request: Request, next_stage: int, user: str = Depends(permission_required("inventory")), db: AsyncSession = Depends(get_db)):
     """API: Avanza etapa."""
+    country = get_current_country(request) or "MX"
     # Validar next_stage logic...
-    result = await db.execute(select(AppState).where(AppState.key == 'current_inventory_stage'))
+    result = await db.execute(select(AppState).where(AppState.key == 'current_inventory_stage', AppState.country_code == country))
     stage_state = result.scalar_one_or_none()
     current_stage = int(stage_state.value) if stage_state else 0
     
@@ -447,40 +458,44 @@ async def advance_inventory_stage_api(next_stage: int, user: str = Depends(permi
     prev_stage = next_stage - 1
     stmt = select(StockCount.item_code, func.sum(StockCount.counted_qty).label('total_counted')).\
         join(CountSession, StockCount.session_id == CountSession.id).\
-        where(CountSession.inventory_stage == prev_stage).\
+        where(CountSession.inventory_stage == prev_stage, CountSession.country_code == country, StockCount.country_code == country).\
         group_by(StockCount.item_code)
     
     result = await db.execute(stmt)
     counted_items = result.all()
     
-    await db.execute(delete(RecountList).where(RecountList.stage_to_count == next_stage))
+    await db.execute(delete(RecountList).where(RecountList.stage_to_count == next_stage, RecountList.country_code == country))
 
     items_for_recount = []
+    country_master_qty = master_qty_map.get(country, {})
     for item in counted_items:
         item_code = item.item_code
         total_counted = item.total_counted
-        system_qty = master_qty_map.get(item_code)
+        system_qty = country_master_qty.get(item_code)
         system_qty = int(system_qty) if system_qty is not None else 0
 
         if total_counted != system_qty:
-            items_for_recount.append({"item_code": item_code, "stage_to_count": next_stage})
+            items_for_recount.append({"item_code": item_code, "stage_to_count": next_stage, "country_code": country})
 
     if items_for_recount:
         await db.execute(insert(RecountList), items_for_recount)
     
     stage_state.value = str(next_stage)
     await db.commit()
-    return JSONResponse(content={"message": f"Avanzado a Etapa {next_stage}", "stage": next_stage})
+    from fastapi.responses import JSONResponse
+    return JSONResponse(content={"message": f"Avanzado a Etapa {next_stage} en {country}", "stage": next_stage})
 
 @router.post('/api/admin/inventory/finalize')
-async def finalize_inventory_api(user: str = Depends(permission_required("inventory")), db: AsyncSession = Depends(get_db)):
+async def finalize_inventory_api(request: Request, user: str = Depends(permission_required("inventory")), db: AsyncSession = Depends(get_db)):
     """API: Finaliza inventario."""
-    result = await db.execute(select(AppState).where(AppState.key == 'current_inventory_stage'))
+    country = get_current_country(request) or "MX"
+    result = await db.execute(select(AppState).where(AppState.key == 'current_inventory_stage', AppState.country_code == country))
     stage_state = result.scalar_one_or_none()
     if stage_state:
         stage_state.value = '0' 
         await db.commit()
-    return JSONResponse(content={"message": "Inventario finalizado correctamente", "stage": 0})
+    from fastapi.responses import JSONResponse
+    return JSONResponse(content={"message": f"Inventario en {country} finalizado correctamente", "stage": 0})
 
 
 # ===== RUTAS DE MANAGE COUNTS =====
@@ -491,6 +506,7 @@ async def manage_counts_page(request: Request, username: str = Depends(permissio
     if not isinstance(username, str):
         return username
     
-    counts = await db_counts.load_all_counts_db_async(db)
+    country = get_current_country(request) or "MX"
+    counts = await db_counts.load_all_counts_db_async(db, country_code=country)
     
     return templates.TemplateResponse('manage_counts.html', {"request": request, "counts": counts})
