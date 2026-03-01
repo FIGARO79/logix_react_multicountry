@@ -24,7 +24,7 @@ DB_TYPE = os.getenv('DB_TYPE', 'sqlite' if ENVIRONMENT == 'development' else 'my
 if DB_TYPE == 'sqlite':
     # Configuración para SQLite (Desarrollo Local / Portable)
     os.makedirs(INSTANCE_FOLDER, exist_ok=True)
-    DB_PATH = os.path.join(INSTANCE_FOLDER, 'inbound_log.db')
+    DB_PATH = os.path.join(INSTANCE_FOLDER, 'logix_dev.db')
     ASYNC_DB_URL = f"sqlite+aiosqlite:///{DB_PATH}"
     print(f"Modo de Base de Datos: SQLite (Local) -> {DB_PATH}")
 else:
