@@ -1,7 +1,5 @@
 granian>=1.2.0
 fastapi>=0.124.0
-uvicorn[standard]>=0.34.0
-watchfiles>=0.24.0
 starlette>=0.45.2
 python-multipart>=0.0.20
 itsdangerous>=2.2.0
@@ -28,6 +26,7 @@ pytz>=2025.0
 pydantic>=2.10.0
 pydantic_core>=2.27.0
 python-dotenv>=1.0.1
+slowapi>=0.1.9
 aiofiles>=25.1.0
 httpx>=0.28.0
 Jinja2>=3.1.6
@@ -38,3 +37,4 @@ bcrypt>=4.2.0
 # Testing
 pytest>=8.3.0
 pytest-asyncio>=0.24.0
+playwright>=1.42.0

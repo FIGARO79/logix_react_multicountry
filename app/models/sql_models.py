@@ -144,6 +144,7 @@ class PickingAudit(Base):
 
     items = relationship("PickingAuditItem", back_populates="audit", cascade="all, delete-orphan")
     package_items = relationship("PickingPackageItem", back_populates="audit", cascade="all, delete-orphan")
+    shipment_links = relationship("ShipmentAudit", back_populates="audit")
 
 class PickingAuditItem(Base):
     __tablename__ = "picking_audit_items"
@@ -169,11 +170,41 @@ class PickingPackageItem(Base):
     country_code: Mapped[str] = mapped_column(String(5), nullable=False, default="MX", index=True)
     audit_id: Mapped[int] = mapped_column(Integer, ForeignKey("picking_audits.id"), nullable=False, index=True)
     package_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    order_line: Mapped[Optional[str]] = mapped_column(String(50))
     item_code: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(String(255))
     qty_scan: Mapped[int] = mapped_column(Integer, nullable=False)
 
     audit = relationship("PickingAudit", back_populates="package_items")
+
+
+class Shipment(Base):
+    """Envío consolidado que agrupa múltiples auditorías de picking."""
+    __tablename__ = "shipments"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    country_code: Mapped[str] = mapped_column(String(5), nullable=False, default="MX", index=True)
+    created_at: Mapped[str] = mapped_column(String(50), nullable=False,
+        default=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
+    username: Mapped[str] = mapped_column(String(100), nullable=False)
+    note: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    carrier: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    status: Mapped[str] = mapped_column(String(50), nullable=False, default="active")
+
+    audit_links = relationship("ShipmentAudit", back_populates="shipment", cascade="all, delete-orphan")
+
+
+class ShipmentAudit(Base):
+    """Tabla puente: vincula un envío con una auditoría de picking."""
+    __tablename__ = "shipment_audits"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    country_code: Mapped[str] = mapped_column(String(5), nullable=False, default="MX", index=True)
+    shipment_id: Mapped[int] = mapped_column(Integer, ForeignKey("shipments.id"), nullable=False, index=True)
+    audit_id: Mapped[int] = mapped_column(Integer, ForeignKey("picking_audits.id"), nullable=False, index=True)
+
+    shipment = relationship("Shipment", back_populates="audit_links")
+    audit = relationship("PickingAudit", back_populates="shipment_links")
 
 class CycleCountRecording(Base):
     __tablename__ = "cycle_count_recordings"

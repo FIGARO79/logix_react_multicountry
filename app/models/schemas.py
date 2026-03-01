@@ -103,3 +103,10 @@ class GRNMasterResponse(GRNMasterBase):
 
     class Config:
         from_attributes = True
+
+
+class ShipmentCreate(BaseModel):
+    """Modelo para crear un envío consolidado."""
+    audit_ids: List[int]
+    note: Optional[str] = None
+    carrier: Optional[str] = None

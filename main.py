@@ -9,6 +9,10 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from app.core.limiter import limiter
+
 # Importar configuración
 from app.core.config import PROJECT_ROOT, SECRET_KEY
 from app.middleware.security import SchemeMiddleware, HSTSMiddleware
@@ -20,7 +24,11 @@ from app.services.database import run_migrations
 from app.services.csv_handler import load_csv_data
 
 # Importar routers existentes (que ya eran JSON o mixtos)
-from app.routers import sessions, logs, stock, counts, auth, admin, update, picking, inventory, planner, inbound, grn
+from app.routers import (
+    sessions, logs, stock, counts, auth, admin, 
+    update, picking, inventory, planner, inbound, 
+    grn, shipment, integrations
+)
 
 # [NUEVO] Importar router refactorizado para vistas convertidas a API
 from app.routers import api_views
@@ -45,6 +53,8 @@ app = FastAPI(
     version="2.1.0",
     lifespan=lifespan
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # --- Configuración de CORS [CRÍTICO PARA REACT] ---
 app.add_middleware(
@@ -95,6 +105,8 @@ app.include_router(update.router)
 app.include_router(inventory.router)
 app.include_router(inbound.router)
 app.include_router(grn.router)
+app.include_router(shipment.router)
+app.include_router(integrations.router)
 
 # --- Endpoint de salud ---
 @app.get("/health")
@@ -106,5 +118,5 @@ async def health_check():
     }
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    import granian
+    granian.Granian("main:app", address="0.0.0.0", port=8000, reload=True).run()

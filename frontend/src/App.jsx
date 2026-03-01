@@ -29,6 +29,8 @@ const CycleCountHistory = lazy(() => import('./pages/CycleCountHistory'));
 const ManageCountDifferences = lazy(() => import('./pages/ManageCountDifferences'));
 const ManageCycleCountDifferences = lazy(() => import('./pages/ManageCycleCountDifferences'));
 const WaybillGRN = lazy(() => import('./pages/WaybillGRN'));
+const Shipments = lazy(() => import('./pages/Shipments'));
+const ConsolidatedPackingList = lazy(() => import('./pages/ConsolidatedPackingList'));
 const ErrorPage = lazy(() => import('./pages/Error'));
 
 // Componente de carga
@@ -192,12 +194,22 @@ function App() {
                         <Route path="/admin/login" element={<AdminLogin />} />
                         <Route path="/admin/users" element={<AdminUsers />} />
                         <Route path="/admin/inventory" element={<AdminInventory />} />
+                        <Route path="/shipments" element={
+                            <ProtectedRoute requiredPermission="picking">
+                                <Shipments />
+                            </ProtectedRoute>
+                        } />
                     </Route>
 
                     {/* Standalone Protected Routes (No Layout) */}
                     <Route path="/packing_list/print/:id" element={
                         <ProtectedRoute>
                             <PackingListPrint />
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/shipments/print/:id" element={
+                        <ProtectedRoute>
+                            <ConsolidatedPackingList />
                         </ProtectedRoute>
                     } />
 

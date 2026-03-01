@@ -45,9 +45,11 @@ class PickingAuditSummary(BaseModel):
     timestamp: str
     status: str
     packages: Optional[int]
+    packages_assignment: Optional[Dict[str, Any]] = {}
     items: List[Dict[str, Any]]
 
 class PickingPackageItemModel(BaseModel):
+    order_line: Optional[str] = ""
     item_code: str
     description: str
     quantity: int
@@ -120,8 +122,12 @@ async def get_reconciliation_data(
             }
             
         # --- Data Processing Logic (Identical to Original) ---
-        logs_df['qtyReceived'] = pd.to_numeric(logs_df['qtyReceived'], errors='coerce').fillna(0)
-        grn_df['Quantity'] = pd.to_numeric(grn_df['Quantity'], errors='coerce').fillna(0)
+        # Limpiar comas antes de convertir a numérico
+        clean_qty_rec = logs_df['qtyReceived'].astype(str).str.replace(',', '', regex=False)
+        logs_df['qtyReceived'] = pd.to_numeric(clean_qty_rec, errors='coerce').fillna(0)
+        
+        clean_qty_grn = grn_df['Quantity'].astype(str).str.replace(',', '', regex=False)
+        grn_df['Quantity'] = pd.to_numeric(clean_qty_grn, errors='coerce').fillna(0)
 
         items_in_file = grn_df['Item_Code'].unique()
         logs_df_filtered = logs_df[logs_df['itemCode'].isin(items_in_file)]
@@ -207,6 +213,28 @@ async def view_picking_audits_api(request: Request, username: str = Depends(logi
             } for item in items_orm
         ]
         
+        # Obtener asignación de bultos
+        result_pkgs = await db.execute(
+            select(PickingPackageItem).where(
+                PickingPackageItem.audit_id == audit_orm.id, 
+                PickingPackageItem.country_code == country
+            )
+        )
+        package_items = result_pkgs.scalars().all()
+        packages_assignment = {}
+        for pi in package_items:
+            # Encontrar el order_line si no está en pi
+            order_line = pi.order_line
+            if not order_line:
+                match = next((i for i in items_data if i["item_code"] == pi.item_code), None)
+                if match:
+                    order_line = match["order_line"]
+            
+            key = f"{pi.item_code}:{order_line or ''}"
+            if key not in packages_assignment:
+                packages_assignment[key] = {}
+            packages_assignment[key][str(pi.package_number)] = pi.qty_scan
+
         audits.append({
             "id": audit_orm.id,
             "order_number": audit_orm.order_number,
@@ -216,6 +244,7 @@ async def view_picking_audits_api(request: Request, username: str = Depends(logi
             "timestamp": audit_orm.timestamp,
             "status": audit_orm.status,
             "packages": audit_orm.packages,
+            "packages_assignment": packages_assignment,
             "items": items_data
         })
 
