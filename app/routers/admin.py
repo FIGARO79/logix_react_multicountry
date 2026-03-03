@@ -12,7 +12,8 @@ from app.models.sql_models import User
 from sqlalchemy import update
 from app.core.config import ADMIN_PASSWORD
 from app.core.templates import templates
-from app.services.csv_handler import load_csv_data, get_current_country # Importar función de recarga
+from app.services.csv_handler import load_csv_data
+from app.utils.country import get_current_country
 
 router = APIRouter(prefix="/admin", tags=["admin_html"])
 api_router = APIRouter(prefix="/api/admin", tags=["admin_api"])

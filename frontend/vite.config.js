@@ -15,7 +15,11 @@ export default defineConfig({
                 secure: false,
             },
             // Static files (Images, etc)
-            '/static': 'http://localhost:8000',
+            '/static': {
+                target: 'http://127.0.0.1:8000',
+                changeOrigin: true,
+                secure: false,
+            },
         }
     },
     build: {

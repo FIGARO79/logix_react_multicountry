@@ -5,9 +5,10 @@ Genera un archivo Excel con los conteos sugeridos basado en la clasificación AB
 import datetime
 import random
 from io import BytesIO
+from typing import List
 import pandas as pd
 import numpy as np
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
@@ -21,6 +22,19 @@ import os
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/planner", tags=["planner"])
+
+# --- Modelos Pydantic ---
+class PlannerConfigModel(BaseModel):
+    start_date: str
+    end_date: str
+    holidays: List[str]
+
+# --- Configuración de Negocio ---
+FREQUENCY_MAP = {
+    "A": 3,  # 3 veces al año
+    "B": 2,  # 2 veces al año
+    "C": 1   # 1 vez al año
+}
 
 # --- Persistencia de Configuración ---
 from app.core.config import PROJECT_ROOT

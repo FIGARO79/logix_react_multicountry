@@ -20,7 +20,8 @@ from app.core.config import (
     GRN_COLUMN_NAME_IN_CSV,
     ADMIN_PASSWORD
 )
-from app.services.csv_handler import load_csv_data, get_current_country, get_country_csv_path, DATABASE_FOLDER
+from app.services.csv_handler import load_csv_data, get_country_csv_path, DATABASE_FOLDER
+from app.utils.country import get_current_country
 from app.utils.auth import login_required
 from app.core.templates import templates
 

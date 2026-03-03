@@ -31,6 +31,11 @@ class HSTSMiddleware(BaseHTTPMiddleware):
     
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
+        
+        # Saltarse HSTS en desarrollo para evitar problemas con proxy
+        if os.getenv('ENVIRONMENT') == 'development':
+            return response
+
         # Añadir HSTS si la petición es HTTPS
         scheme = request.scope.get('scheme', 'http')
         if scheme == 'https':

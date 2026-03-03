@@ -25,8 +25,9 @@ router = APIRouter(tags=["auth"])
 
 
 @router.post('/api/register')
-async def register_api(request: Request, username: str = Form(...), password: str = Form(...), country: str = Form("MX"), db: AsyncSession = Depends(get_db)):
+async def register_api(request: Request, username: str = Form(...), password: str = Form(...), country: Optional[str] = Form("MX"), db: AsyncSession = Depends(get_db)):
     """API: Procesa el registro de un nuevo usuario."""
+    # ... rest of code
     if not is_strong_password(password):
         return JSONResponse(status_code=400, content={"error": "La contraseña debe tener al menos 8 caracteres, incluir letras y dígitos."})
 
@@ -38,7 +39,7 @@ async def register_api(request: Request, username: str = Form(...), password: st
 
 
 @router.post('/api/login')
-async def login_api(request: Request, username: str = Form(...), password: str = Form(...), country: str = Form("MX"), db: AsyncSession = Depends(get_db)):
+async def login_api(request: Request, username: str = Form(...), password: str = Form(...), country: Optional[str] = Form("MX"), db: AsyncSession = Depends(get_db)):
     """API: Procesa el login de un usuario y retorna JSON."""
     valid, status_msg = await verify_user(db, username, password, country_code=country)
     

@@ -75,7 +75,17 @@ async def get_all_users(db: AsyncSession) -> List[Dict[str, Any]]:
     """Obtiene todos los usuarios de la base de datos."""
     result = await db.execute(select(User).order_by(User.id.desc()))
     users = result.scalars().all()
-    return [user.to_dict() for user in users]
+    
+    user_list = []
+    for u in users:
+        user_list.append({
+            "id": u.id,
+            "username": u.username,
+            "is_approved": u.is_approved,
+            "permissions": u.permissions or "",
+            "country_code": u.country_code or "MX"
+        })
+    return user_list
 
 async def approve_user_by_id(db: AsyncSession, user_id: int) -> bool:
     """Aprueba un usuario por su ID."""

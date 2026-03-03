@@ -1,6 +1,10 @@
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.db import get_db
+from app.services import db_counts
+from app.models.schemas import CloseLocationRequest
 from app.utils.auth import login_required
 from app.utils.country import get_current_country
-from fastapi import APIRouter, Depends, HTTPException, status, Request
 
 router = APIRouter(prefix="/api", tags=["sessions"])
 

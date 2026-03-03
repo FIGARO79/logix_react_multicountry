@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [country, setCountry] = useState('CL');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -16,6 +17,7 @@ const Login = () => {
             const formData = new FormData();
             formData.append('username', username);
             formData.append('password', password);
+            formData.append('country', country);
 
             const res = await fetch('/api/login', {
                 method: 'POST',
@@ -59,6 +61,19 @@ const Login = () => {
                 )}
 
                 <form onSubmit={handleLogin} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">País</label>
+                        <select
+                            value={country}
+                            onChange={(e) => setCountry(e.target.value)}
+                            className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:border-[#0070d2] focus:ring focus:ring-[#0070d2] focus:ring-opacity-50 p-2 border bg-white"
+                        >
+                            <option value="CL">Chile (CL)</option>
+                            <option value="AR">Argentina (AR)</option>
+                            <option value="BR">Brasil (BR)</option>
+                            <option value="CO">Colombia (CO)</option>
+                        </select>
+                    </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Usuario</label>
                         <input

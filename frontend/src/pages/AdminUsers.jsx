@@ -139,30 +139,36 @@ const AdminUsers = () => {
                 {/* Table */}
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
-                        <thead className="uppercase font-normal text-xs border-b border-gray-200">
+                        <thead className="uppercase font-normal text-xs border-b border-gray-200 bg-gray-50/50">
                             <tr>
-                                <th className="px-6 py-3 text-center w-16">ID</th>
-                                <th className="px-6 py-3 font-normal">Usuario</th>
-                                <th className="px-6 py-3 text-center font-normal">Estado</th>
+                                <th className="px-4 py-3 text-center w-16">ID</th>
+                                <th className="px-4 py-3 font-medium">Usuario</th>
+                                <th className="px-4 py-3 font-medium">País</th>
+                                <th className="px-4 py-3 font-medium">Estado</th>
                                 {MODULES.map(m => (
-                                    <th key={m} className="px-2 py-3 text-center font-normal text-xs">{m.toUpperCase()}</th>
+                                    <th key={m} className="px-2 py-3 text-center font-medium text-[10px]">{m.toUpperCase()}</th>
                                 ))}
-                                <th className="px-6 py-3 text-center font-normal">Acciones</th>
+                                <th className="px-4 py-3 text-center font-medium">Acciones</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
                             {users.map(u => (
-                                <tr key={u.id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-6 py-4 text-center text-gray-500">{u.id}</td>
-                                    <td className="px-6 py-4 font-medium text-gray-900">{u.username}</td>
-                                    <td className="px-6 py-4 text-center">
+                                <tr key={u.id} className="hover:bg-gray-50/80 transition-colors">
+                                    <td className="px-4 py-4 text-center text-gray-500 font-mono">{u.id}</td>
+                                    <td className="px-4 py-4 font-medium text-gray-900">{u.username}</td>
+                                    <td className="px-4 py-4 text-gray-600">
+                                        <span className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 rounded text-xs font-bold">
+                                            {u.country_code || '??'}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-4">
                                         {u.is_approved ? (
-                                            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-200/50">
-                                                Aprobado
+                                            <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-green-100 text-green-700 border border-green-200/50">
+                                                APROBADO
                                             </span>
                                         ) : (
-                                            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 border border-orange-200/50">
-                                                Pendiente
+                                            <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-orange-100 text-orange-700 border border-orange-200/50">
+                                                PENDIENTE
                                             </span>
                                         )}
                                     </td>
@@ -222,7 +228,7 @@ const AdminUsers = () => {
                             ))}
                             {users.length === 0 && (
                                 <tr>
-                                    <td colSpan="4" className="text-center py-8 text-gray-400 italic">
+                                    <td colSpan="10" className="text-center py-8 text-gray-400 italic">
                                         No hay usuarios registrados.
                                     </td>
                                 </tr>

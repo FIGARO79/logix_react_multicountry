@@ -6,7 +6,8 @@ const Register = () => {
     const [formData, setFormData] = useState({
         username: '',
         password: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        country: 'CL'
     });
     const [message, setMessage] = useState(null);
     const [error, setError] = useState(null);
@@ -25,6 +26,7 @@ const Register = () => {
             const body = new FormData();
             body.append('username', formData.username);
             body.append('password', formData.password);
+            body.append('country', formData.country);
 
             const res = await fetch('/api/register', {
                 method: 'POST',
@@ -60,6 +62,20 @@ const Register = () => {
 
                 <form onSubmit={handleSubmit} className="mt-6">
                     <div>
+                        <label className="block text-sm font-semibold text-gray-700">País</label>
+                        <select
+                            name="country"
+                            className="w-full px-4 py-2 mt-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600 bg-white"
+                            value={formData.country}
+                            onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                        >
+                            <option value="CL">Chile (CL)</option>
+                            <option value="AR">Argentina (AR)</option>
+                            <option value="BR">Brasil (BR)</option>
+                            <option value="CO">Colombia (CO)</option>
+                        </select>
+                    </div>
+                    <div className="mt-4">
                         <label className="block text-sm font-semibold text-gray-700">Usuario</label>
                         <input
                             type="text"

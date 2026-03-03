@@ -56,6 +56,7 @@ COLUMNS_TO_READ_GRN = [GRN_COLUMN_NAME_IN_CSV, 'Item_Code', 'Quantity', 'Item_De
 # Cargar desde variables de entorno (OBLIGATORIAS)
 SECRET_KEY = os.getenv('SECRET_KEY')
 ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
+INTEGRATION_API_KEY = os.getenv('INTEGRATION_API_KEY')
 
 # Validar que las variables críticas estén configuradas
 if not SECRET_KEY:
