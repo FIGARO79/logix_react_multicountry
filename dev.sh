@@ -1,47 +1,51 @@
 #!/bin/bash
 
 # ========================================================
-# Script de Desarrollo Logix - Multicountry
-# Inicia Backend (Granian) y Frontend (Vite)
+# Script de Desarrollo Logix - Multicountry (Granian)
 # ========================================================
 
-# Colores para la terminal
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+YELLOW='\033[1;33m'
+NC='\033[0m'
 
-echo -e "${BLUE}[INFO] Iniciando entorno de desarrollo multicountry...${NC}"
+echo -e "${BLUE}[INFO] Iniciando entorno de desarrollo multicountry con Granian...${NC}"
 
-# Asegurarse de que estamos en la raíz del proyecto
+# 1. Configuración de Rutas y Entorno
 cd "$(dirname "$0")"
+export PYTHONPATH=$PYTHONPATH:.
+export ENVIRONMENT=development
 
-# 1. Iniciar Backend en segundo plano
-echo -e "${GREEN}[BACKEND] Levantando API con Granian en el puerto 8000...${NC}"
+# Determinar el entorno virtual
 if [ -d "venv" ]; then
-    source venv/bin/activate
+    VENV_PATH="venv"
 elif [ -d ".venv_linux" ]; then
-    source .venv_linux/bin/activate
+    VENV_PATH=".venv_linux"
+else
+    echo -e "${YELLOW}[WARN] No se encontró carpeta venv.${NC}"
+    exit 1
 fi
 
-export ENVIRONMENT=development
-# Ejecutamos Granian directamente vía CLI
-echo -e "${GREEN}[BACKEND] Iniciando API...${NC}"
-granian --interface asgi --host 127.0.0.1 --port 8000 --reload main:app & 
+# 2. Iniciar Backend (Granian)
+echo -e "${GREEN}[BACKEND] Iniciando API con Granian en http://127.0.0.1:8000 ...${NC}"
+# --reload permite autorrecarga al modificar código
+$VENV_PATH/bin/python -m granian --interface asgi --host 127.0.0.1 --port 8000 --reload main:app &
 BACKEND_PID=$!
 
-# Esperar unos segundos para que el backend esté listo antes de iniciar el frontend
-echo -e "${BLUE}[INFO] Esperando 3 segundos a que el backend cargue los CSV...${NC}"
-sleep 3
-
-# 2. Iniciar Frontend
-echo -e "${GREEN}[FRONTEND] Levantando Vite dev server...${NC}"
+# 3. Iniciar Frontend
+echo -e "${GREEN}[FRONTEND] Iniciando Vite dev server...${NC}"
 cd frontend
 npm run dev &
 FRONTEND_PID=$!
 
-# Función para detener ambos procesos al cerrar el script (Ctrl+C)
-trap "kill $BACKEND_PID $FRONTEND_PID; echo -e '
-${BLUE}[INFO] Servidores detenidos.${NC}'; exit" INT TERM EXIT
+# Función para limpieza al salir
+cleanup() {
+    echo -e "\n${BLUE}[INFO] Deteniendo servidores...${NC}"
+    kill $BACKEND_PID $FRONTEND_PID 2>/dev/null
+    exit
+}
 
-# Mantener el script en ejecución para ver los logs
+trap cleanup INT TERM EXIT
+
+# Mantener vivo el script para ver logs
 wait

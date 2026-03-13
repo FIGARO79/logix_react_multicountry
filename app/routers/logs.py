@@ -6,14 +6,15 @@ import pandas as pd
 from io import BytesIO
 import openpyxl
 from openpyxl.utils import get_column_letter
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import JSONResponse, Response
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import get_db
 from app.models.schemas import LogEntry
-from app.services import db_logs, csv_handler
-from app.utils.auth import login_required, permission_required
+from app.services import db_logs, csv_handler, slotting_service, ai_slotting
+from app.utils.auth import login_required, permission_required, api_login_required
+from app.utils.country import get_current_country
 from app.core.config import ASYNC_DB_URL
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text
@@ -32,25 +33,57 @@ router = APIRouter(prefix="/api", tags=["logs"])
 
 @router.get('/find_item/{item_code}/{import_reference}')
 async def find_item(
+    request: Request,
     item_code: str, 
     import_reference: str, 
-    username: str = Depends(permission_required(["stock", "inbound"])), 
+    username: str = Depends(api_login_required), 
     db: AsyncSession = Depends(get_db)
 ):
-    """Busca un item en el maestro y calcula cantidades."""
-    item_details = await csv_handler.get_item_details_from_master_csv(item_code)
+    """Busca un item en el maestro y calcula cantidades con sugerencia de Slotting e IA (Multicountry)."""
+    item_code = item_code.strip().upper()
+    country = get_current_country(request) or "CL"
+    
+    item_details = await csv_handler.get_item_details_from_master_csv(item_code, country_code=country)
     if item_details is None:
         raise HTTPException(status_code=404, detail=f"Artículo {item_code} no encontrado en el maestro.")
     
-    expected_quantity = await csv_handler.get_total_expected_quantity_for_item(item_code)
+    expected_quantity = await csv_handler.get_total_expected_quantity_for_item(item_code, country_code=country)
     original_bin = item_details.get('Bin_1', 'N/A')
-    latest_relocated_bin = await db_logs.get_latest_relocated_bin_async(db, item_code)
+    latest_relocated_bin = await db_logs.get_latest_relocated_bin_async(db, item_code, country_code=country)
     effective_bin_location = latest_relocated_bin if latest_relocated_bin else original_bin
     
+    # 1. Sugerencia de Slotting Dinámico (Algoritmo Tradicional)
+    traditional_suggested_bin = await slotting_service.get_suggested_bin(db, country, item_details)
+
+    # 2. Sugerencia de IA (Aprendizaje Histórico)
+    ai_predicted_bin = ai_slotting.predict_best_bin(
+        country_code=country,
+        item_code=item_code,
+        sic_code=item_details.get('SIC_Code_stockroom'),
+        fallback_bin=traditional_suggested_bin
+    )
+
+    # 3. Validación de Capacidad para la IA
+    final_suggested_bin = ai_predicted_bin
+    is_ai_prediction = ai_predicted_bin != traditional_suggested_bin
+
+    if is_ai_prediction:
+        occupancy = await slotting_service._get_bins_occupancy(db, country)
+        current_skus = occupancy.get(ai_predicted_bin.upper(), 0)
+        if current_skus >= 4:
+            final_suggested_bin = traditional_suggested_bin
+            is_ai_prediction = False
+
+    if latest_relocated_bin or final_suggested_bin == effective_bin_location:
+        final_suggested_bin = None
+        is_ai_prediction = False
+
     response_data = {
         "itemCode": item_details.get('Item_Code', item_code),
         "description": item_details.get('Item_Description', 'N/A'),
         "binLocation": effective_bin_location,
+        "suggestedBin": final_suggested_bin,
+        "is_ai_prediction": is_ai_prediction,
         "aditionalBins": item_details.get('Aditional_Bin_Location', 'N/A'),
         "physicalQty": item_details.get('Physical_Qty', '0'),
         "weight": item_details.get('Weight_per_Unit', 'N/A'),
@@ -64,30 +97,31 @@ async def find_item(
 
 
 @router.post('/add_log')
-async def add_log(data: LogEntry, username: str = Depends(permission_required("inbound")), db: AsyncSession = Depends(get_db)):
-    """Añade un registro de entrada."""
+async def add_log(request: Request, data: LogEntry, username: str = Depends(permission_required("inbound")), db: AsyncSession = Depends(get_db)):
+    """Añade un registro de entrada y entrena la IA de Slotting."""
     if data.quantity <= 0:
         raise HTTPException(status_code=400, detail="Cantidad debe ser > 0")
     
-    item_code_form = data.itemCode
+    item_code_form = data.itemCode.strip().upper()
     import_reference = data.importReference
     quantity_received_form = data.quantity
+    country = get_current_country(request) or "CL"
     
-    item_details = await csv_handler.get_item_details_from_master_csv(item_code_form)
+    item_details = await csv_handler.get_item_details_from_master_csv(item_code_form, country_code=country)
     if item_details is None:
         raise HTTPException(status_code=404, detail=f"Artículo {item_code_form} no encontrado.")
     
-    # Obtener la ubicación efectiva (reubicada si existe, o la original del maestro)
+    # Obtener la ubicación efectiva
     original_bin_from_master = item_details.get('Bin_1', 'N/A')
-    latest_relocated_bin_for_item = await db_logs.get_latest_relocated_bin_async(db, item_code_form)
+    latest_relocated_bin_for_item = await db_logs.get_latest_relocated_bin_async(db, item_code_form, country_code=country)
     bin_to_log_as_original = latest_relocated_bin_for_item if latest_relocated_bin_for_item else original_bin_from_master
     
-    total_received_before = await db_logs.get_total_received_for_import_reference_async(db, import_reference, item_code_form)
-    total_expected = await csv_handler.get_total_expected_quantity_for_item(item_code_form)
+    total_received_before = await db_logs.get_total_received_for_import_reference_async(db, import_reference, item_code_form, country_code=country)
+    total_expected = await csv_handler.get_total_expected_quantity_for_item(item_code_form, country_code=country)
     total_received_now = total_received_before + quantity_received_form
     difference = total_received_now - total_expected
     
-    # Usar hora de Colombia (UTC-5) para consistencia en servidores nube (PythonAnywhere usa UTC)
+    # Usar hora de Colombia (UTC-5)
     colombia_tz = datetime.timezone(datetime.timedelta(hours=-5))
     current_time = datetime.datetime.now(colombia_tz)
 
@@ -95,15 +129,24 @@ async def add_log(data: LogEntry, username: str = Depends(permission_required("i
         'timestamp': current_time.isoformat(timespec='seconds'),
         'importReference': import_reference.strip() if import_reference else '',
         'waybill': data.waybill.strip() if data.waybill else '',
-        'itemCode': item_code_form.strip() if item_code_form else '',
+        'itemCode': item_code_form,
         'itemDescription': item_details.get('Item_Description', 'N/A'),
-        'binLocation': bin_to_log_as_original,  # Ubicación efectiva
+        'binLocation': bin_to_log_as_original,
         'relocatedBin': data.relocatedBin or '',
         'qtyReceived': quantity_received_form,
         'qtyGrn': total_expected,
-        'difference': difference
-        # Nota: observaciones no se incluye porque la columna no existe en tabla MySQL
+        'difference': difference,
+        'country_code': country
     }
+
+    # APRENDIZAJE: Si el operario eligió una ubicación de reubicación, alimentamos la IA
+    if data.relocatedBin:
+        ai_slotting.learn_from_decision(
+            country_code=country,
+            item_code=item_code_form,
+            final_bin=data.relocatedBin,
+            sic_code=item_details.get('SIC_Code_stockroom')
+        )
     
     log_id = await db_logs.save_log_entry_db_async(db, entry_data)
     if log_id:
@@ -113,25 +156,25 @@ async def add_log(data: LogEntry, username: str = Depends(permission_required("i
 
 
 @router.put('/update_log/{log_id}')
-async def update_log(log_id: int, data: dict, username: str = Depends(permission_required("inbound")), db: AsyncSession = Depends(get_db)):
+async def update_log(request: Request, log_id: int, data: dict, username: str = Depends(permission_required("inbound")), db: AsyncSession = Depends(get_db)):
     """Actualiza un registro de entrada existente."""
-    existing_log = await db_logs.get_log_entry_by_id_async(db, log_id)
+    country = get_current_country(request) or "CL"
+    existing_log = await db_logs.get_log_entry_by_id_async(db, log_id, country_code=country)
     if not existing_log:
         raise HTTPException(status_code=404, detail=f"Registro con ID {log_id} no encontrado.")
     
     waybill = data.get('waybill', existing_log.get('waybill'))
     relocated_bin = data.get('relocatedBin', existing_log.get('relocatedBin'))
     qty_received = int(data.get('qtyReceived', existing_log.get('qtyReceived')))
-    # Nota: observaciones se omite porque no existe en tabla MySQL
     
     import_reference = existing_log['importReference']
     item_code = existing_log['itemCode']
     
     # Recalcular diferencia
-    total_received_others = await db_logs.get_total_received_for_import_reference_async(db, import_reference, item_code)
+    total_received_others = await db_logs.get_total_received_for_import_reference_async(db, import_reference, item_code, country_code=country)
     total_received_others -= int(existing_log.get('qtyReceived', 0))
     total_received_now = total_received_others + qty_received
-    total_expected = await csv_handler.get_total_expected_quantity_for_item(item_code)
+    total_expected = await csv_handler.get_total_expected_quantity_for_item(item_code, country_code=country)
     difference = total_received_now - total_expected
     
     entry_data_for_db = {
@@ -140,61 +183,63 @@ async def update_log(log_id: int, data: dict, username: str = Depends(permission
         'qtyReceived': qty_received,
         'difference': difference,
         'timestamp': datetime.datetime.now().isoformat(timespec='seconds')
-        # Nota: observaciones se omite porque no existe en tabla MySQL
     }
     
-    success = await db_logs.update_log_entry_db_async(db, log_id, entry_data_for_db)
+    success = await db_logs.update_log_entry_db_async(db, log_id, entry_data_for_db, country_code=country)
     if success:
         return JSONResponse({'message': f'Registro {log_id} actualizado con éxito.'})
     raise HTTPException(status_code=500, detail="Error al actualizar el registro.")
 
 
 @router.get('/get_logs')
-async def get_logs(version_date: Optional[str] = None, username: str = Depends(permission_required("inbound")), db: AsyncSession = Depends(get_db)):
+async def get_logs(request: Request, version_date: Optional[str] = None, username: str = Depends(permission_required("inbound")), db: AsyncSession = Depends(get_db)):
     """
     Obtiene los registros de entrada.
-    Si version_date is None: obtiene los logs ACTIVOS.
-    Si version_date tiene valor: obtiene los logs de esa versión archivada.
     """
+    country = get_current_country(request) or "CL"
     if version_date:
-        logs = await db_logs.load_archived_log_data_db_async(db, version_date)
+        logs = await db_logs.load_archived_log_data_db_async(db, country, version_date)
     else:
-        logs = await db_logs.load_log_data_db_async(db)
+        logs = await db_logs.load_log_data_db_async(db, country)
     return JSONResponse(content=logs)
 
 
 @router.post('/logs/archive')
-async def archive_logs(username: str = Depends(permission_required("inbound")), db: AsyncSession = Depends(get_db)):
+async def archive_logs(request: Request, username: str = Depends(permission_required("inbound")), db: AsyncSession = Depends(get_db)):
     """Archiva los logs actuales para limpiar la base."""
-    success = await db_logs.archive_current_logs_db_async(db)
+    country = get_current_country(request) or "CL"
+    success = await db_logs.archive_current_logs_db_async(db, country_code=country)
     if success:
         return JSONResponse({'message': 'Logs archivados correctamente.'})
     raise HTTPException(status_code=500, detail="Error al archivar los logs.")
 
 
 @router.get('/logs/versions')
-async def get_log_versions(username: str = Depends(permission_required("inbound")), db: AsyncSession = Depends(get_db)):
+async def get_log_versions(request: Request, username: str = Depends(permission_required("inbound")), db: AsyncSession = Depends(get_db)):
     """Obtiene las fechas disponibles de archivos históricos."""
-    versions = await db_logs.get_archived_versions_db_async(db)
+    country = get_current_country(request) or "CL"
+    versions = await db_logs.get_archived_versions_db_async(db, country_code=country)
     return JSONResponse(content=versions)
 
 
 @router.delete('/delete_log/{log_id}')
-async def delete_log_api(log_id: int, username: str = Depends(permission_required("inbound")), db: AsyncSession = Depends(get_db)):
+async def delete_log_api(request: Request, log_id: int, username: str = Depends(permission_required("inbound")), db: AsyncSession = Depends(get_db)):
     """Elimina un registro de entrada."""
-    success = await db_logs.delete_log_entry_db_async(db, log_id)
+    country = get_current_country(request) or "CL"
+    success = await db_logs.delete_log_entry_db_async(db, log_id, country_code=country)
     if success:
         return JSONResponse({'message': f'Registro {log_id} eliminado con éxito.'})
     raise HTTPException(status_code=404, detail=f"Registro con ID {log_id} no encontrado.")
 
 
 @router.get('/export_log')
-async def export_log(version_date: Optional[str] = None, username: str = Depends(permission_required("inbound")), db: AsyncSession = Depends(get_db)):
+async def export_log(request: Request, version_date: Optional[str] = None, username: str = Depends(permission_required("inbound")), db: AsyncSession = Depends(get_db)):
     """Exporta todos los registros de inbound a un archivo Excel."""
+    country = get_current_country(request) or "CL"
     if version_date:
-        logs_data = await db_logs.load_archived_log_data_db_async(db, version_date)
+        logs_data = await db_logs.load_archived_log_data_db_async(db, country, version_date)
     else:
-        logs_data = await db_logs.load_log_data_db_async(db)
+        logs_data = await db_logs.load_log_data_db_async(db, country)
     
     if not logs_data:
         raise HTTPException(status_code=404, detail="No hay registros para exportar")
@@ -243,13 +288,15 @@ async def export_log(version_date: Optional[str] = None, username: str = Depends
 
 
 @router.get('/items_without_grn')
-async def get_items_without_grn(username: str = Depends(permission_required("inbound"))):
-    """Obtiene un reporte de items en el log que no están en ningún GRN."""
+async def get_items_without_grn(request: Request, username: str = Depends(permission_required("inbound"))):
+    """Obtiene un reporte de items en el log que no están en ningún GRN (Multicountry)."""
+    country = get_current_country(request) or "CL"
     try:
         async with async_engine.connect() as conn:
-            logs_df = await conn.run_sync(lambda sync_conn: pd.read_sql_query(text('SELECT * FROM logs'), sync_conn))
+            query = text('SELECT * FROM logs WHERE country_code = :country')
+            logs_df = await conn.run_sync(lambda sync_conn: pd.read_sql_query(query, sync_conn, params={"country": country}))
 
-        grn_df = csv_handler.df_grn_cache
+        grn_df = csv_handler.df_grn_cache.get(country)
 
         if logs_df.empty:
             return JSONResponse(content={"data": [], "message": "No hay registros en el log"})
@@ -311,17 +358,21 @@ async def get_items_without_grn(username: str = Depends(permission_required("inb
         })
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get('/export_items_without_grn')
-async def export_items_without_grn(timezone_offset: int = 0, username: str = Depends(permission_required("inbound"))):
-    """Exporta el reporte de items sin GRN a Excel."""
+async def export_items_without_grn(request: Request, timezone_offset: int = 0, username: str = Depends(permission_required("inbound"))):
+    """Exporta el reporte de items sin GRN a Excel (Multicountry)."""
+    country = get_current_country(request) or "CL"
     try:
         async with async_engine.connect() as conn:
-            logs_df = await conn.run_sync(lambda sync_conn: pd.read_sql_query(text('SELECT * FROM logs'), sync_conn))
+            query = text('SELECT * FROM logs WHERE country_code = :country')
+            logs_df = await conn.run_sync(lambda sync_conn: pd.read_sql_query(query, sync_conn, params={"country": country}))
 
-        grn_df = csv_handler.df_grn_cache
+        grn_df = csv_handler.df_grn_cache.get(country)
 
         if logs_df.empty:
             raise HTTPException(status_code=404, detail="No hay registros en el log")
@@ -392,17 +443,20 @@ async def export_items_without_grn(timezone_offset: int = 0, username: str = Dep
 
 
 @router.get('/export_reconciliation')
-async def export_reconciliation(timezone_offset: int = 0, archive_date: Optional[str] = None, username: str = Depends(permission_required("inbound"))):
-    """Genera y exporta el reporte de conciliación."""
+async def export_reconciliation(request: Request, timezone_offset: int = 0, archive_date: Optional[str] = None, username: str = Depends(permission_required("inbound")), db: AsyncSession = Depends(get_db)):
+    """Genera y exporta el reporte de conciliación (Multicountry)."""
+    country = get_current_country(request) or "CL"
     try:
         async with async_engine.connect() as conn:
             if archive_date:
-                logs_df = await conn.run_sync(lambda sync_conn: pd.read_sql_query(text('SELECT * FROM logs WHERE archived_at = :date'), sync_conn, params={"date": archive_date}))
+                query = text('SELECT * FROM logs WHERE archived_at = :date AND country_code = :country')
+                logs_df = await conn.run_sync(lambda sync_conn: pd.read_sql_query(query, sync_conn, params={"date": archive_date, "country": country}))
             else:
-                logs_df = await conn.run_sync(lambda sync_conn: pd.read_sql_query(text('SELECT * FROM logs WHERE archived_at IS NULL'), sync_conn))
+                query = text('SELECT * FROM logs WHERE archived_at IS NULL AND country_code = :country')
+                logs_df = await conn.run_sync(lambda sync_conn: pd.read_sql_query(query, sync_conn, params={"country": country}))
 
-        # Accedemos al caché de GRN
-        grn_df = csv_handler.df_grn_cache 
+        # Accedemos al caché de GRN del país
+        grn_df = csv_handler.df_grn_cache.get(country)
 
         if logs_df.empty or grn_df is None:
             raise HTTPException(status_code=404, detail="No hay datos suficientes para generar la conciliación")
@@ -435,13 +489,6 @@ async def export_reconciliation(timezone_offset: int = 0, archive_date: Optional
                 columns={'itemCode': 'Item_Code', 'binLocation': 'Bin_Original', 'relocatedBin': 'Bin_Reubicado'}
             )
             
-            # Extraer observaciones si existen
-            if 'observaciones' in latest_logs.columns:
-                obs_df = latest_logs[['itemCode', 'observaciones']].rename(
-                    columns={'itemCode': 'Item_Code', 'observaciones': 'Observaciones'}
-                )
-                locations_df = locations_df.merge(obs_df, on='Item_Code', how='left')
-            
             merged_df = pd.merge(merged_df, locations_df, on='Item_Code', how='left')
 
         merged_df['Total_Recibido'] = merged_df['Total_Recibido'].fillna(0)
@@ -459,13 +506,6 @@ async def export_reconciliation(timezone_offset: int = 0, archive_date: Optional
         # Ordenar por GRN ascendente
         merged_df = merged_df.sort_values('GRN_Number', ascending=True)
 
-        # Crear columna de Observaciones si no existe
-        if 'Observaciones' not in merged_df.columns:
-            merged_df['Observaciones'] = ''
-        
-        # Asegurar que las observaciones no sean NaN
-        merged_df['Observaciones'] = merged_df['Observaciones'].fillna('')
-
         df_for_export = merged_df.rename(columns={
             'GRN_Number': 'GRN',
             'Item_Code': 'Código de Ítem',
@@ -477,7 +517,7 @@ async def export_reconciliation(timezone_offset: int = 0, archive_date: Optional
             'Diferencia': 'Diferencia'
         })
         
-        cols_order = ['GRN', 'Código de Ítem', 'Descripción', 'Ubicación', 'Reubicado', 'Cant. Esperada', 'Cant. Recibida', 'Diferencia', 'Observaciones']
+        cols_order = ['GRN', 'Código de Ítem', 'Descripción', 'Ubicación', 'Reubicado', 'Cant. Esperada', 'Cant. Recibida', 'Diferencia']
         df_for_export = df_for_export[cols_order]
 
         output = BytesIO()
@@ -499,4 +539,6 @@ async def export_reconciliation(timezone_offset: int = 0, archive_date: Optional
         return Response(content=output.getvalue(), media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', headers={"Content-Disposition": f"attachment; filename={filename}"})
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error interno al generar el archivo de conciliación: {e}")

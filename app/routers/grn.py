@@ -56,7 +56,7 @@ async def list_grn_master(
     username: str = Depends(permission_required("inbound"))
 ):
     """Lista los registros del maestro de GRN con filtros opcionales y paginación."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     stmt = select(GRNMaster).where(GRNMaster.country_code == country)
     if import_reference:
         stmt = stmt.where(GRNMaster.import_reference.contains(import_reference))
@@ -75,7 +75,7 @@ async def create_grn_master(
     username: str = Depends(permission_required("inbound"))
 ):
     """Crea un nuevo registro en el maestro de GRN."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     new_grn = GRNMaster(**data.dict(), country_code=country)
     db.add(new_grn)
     await db.commit()
@@ -91,7 +91,7 @@ async def update_grn_master(
     username: str = Depends(permission_required("inbound"))
 ):
     """Actualiza un registro existente."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     result = await db.execute(select(GRNMaster).where(GRNMaster.id == grn_id, GRNMaster.country_code == country))
     grn = result.scalar_one_or_none()
     
@@ -113,7 +113,7 @@ async def delete_grn_master(
     username: str = Depends(permission_required("inbound"))
 ):
     """Elimina un registro del maestro."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     result = await db.execute(select(GRNMaster).where(GRNMaster.id == grn_id, GRNMaster.country_code == country))
     grn = result.scalar_one_or_none()
     
@@ -131,5 +131,5 @@ async def sync_grn_master(
     username: str = Depends(permission_required("admin"))
 ):
     """Fuerza la sincronización inicial desde el archivo Excel."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     return await seed_grn_from_excel(db, country_code=country)

@@ -21,7 +21,15 @@ master_file_mtime = {}     # { 'MX': float, 'AR': float }
 
 # --- Funciones de Manejo de CSV ---
 
+def _get_json_cache_path(country_code: str, filename: str) -> str:
+    """Construye la ruta a la caché JSON en static/json/{country_code}/."""
+    from app.core.config import JSON_FOLDER
+    country_dir = os.path.join(JSON_FOLDER, country_code)
+    os.makedirs(country_dir, exist_ok=True)
+    return os.path.join(country_dir, filename)
+
 async def read_csv_safe(file_path: str, columns: list = None):
+# ... resto de la función igual ...
     """
     Lee un archivo CSV de forma segura en un subproceso para no bloquear el bucle de eventos.
     Devuelve un DataFrame de pandas o None si hay un error.
@@ -39,7 +47,7 @@ async def read_csv_safe(file_path: str, columns: list = None):
         print(f"Error CSV: Error inesperado leyendo CSV {file_path}: {e}")
         return None
 
-async def load_csv_data(country_code: str = "MX"):
+async def load_csv_data(country_code: str = "CL"):
     """
     Carga (o recarga) los datos de los archivos CSV para un país específico.
     """
@@ -47,12 +55,11 @@ async def load_csv_data(country_code: str = "MX"):
     
     # Rutas segmentadas
     item_master_path = get_country_csv_path(DATABASE_FOLDER, 'AURRSGLBD0250.csv', country_code)
-    grn_csv_path = get_country_csv_path(DATABASE_FOLDER, 'AURRSGLBD0280.csv', country_code)
     
     print(f"Cargando datos CSV para {country_code}...")
 
     # --- OPTIMIZACIÓN: Cargar master_qty_map desde JSON si existe y está actualizado ---
-    json_cache_path = os.path.join(os.path.dirname(item_master_path), 'stock_qty_cache.json')
+    json_cache_path = _get_json_cache_path(country_code, 'stock_qty_cache.json')
     csv_exists = os.path.exists(item_master_path)
     json_exists = os.path.exists(json_cache_path)
     
@@ -105,39 +112,104 @@ async def load_csv_data(country_code: str = "MX"):
 
     # Cargar GRN
     await load_grn_data_optimized(country_code)
+    
+    # Procesar PO Extractor si existe
+    await process_po_extractor(country_code)
+
+async def process_po_extractor(country_code: str):
+    """Procesa el Excel del robot y genera po_lookup.json para el país."""
+    excel_path = get_country_csv_path(DATABASE_FOLDER, 'Purchase Order Extractor.xlsx', country_code)
+    if not os.path.exists(excel_path):
+        return
+
+    json_path = _get_json_cache_path(country_code, 'po_lookup.json')
+    
+    try:
+        print(f"📑 [{country_code}] Procesando PO Extractor...")
+        df = await run_in_threadpool(pd.read_excel, excel_path, engine='openpyxl')
+        
+        # Normalizar columnas
+        df.columns = [str(c).strip().upper() for c in df.columns]
+        ir_col = 'IMPORT_REFERENCE' if 'IMPORT_REFERENCE' in df.columns else 'IMPORT REFERENCE'
+        grn_col = 'GRN_NUMBER' if 'GRN_NUMBER' in df.columns else 'GRN NUMBER'
+        wb_col = 'WAYBILL' if 'WAYBILL' in df.columns else 'WAYBILL NUMBER'
+        item_col = 'ITEM_CODE' if 'ITEM_CODE' in df.columns else 'ITEM CODE'
+
+        ir_to_data = {}
+        for _, row in df.iterrows():
+            ir = str(row.get(ir_col, "")).strip().upper()
+            if not ir or ir == 'NAN': continue
+            
+            if ir not in ir_to_data:
+                ir_to_data[ir] = {
+                    "waybill": str(row.get(wb_col, "")),
+                    "items": []
+                }
+            
+            ir_to_data[ir]["items"].append({
+                "item_code": str(row.get(item_col, "")).strip().upper(),
+                "grn": str(row.get(grn_col, "")).replace('.0', '').strip().upper()
+            })
+
+        with open(json_path, 'w', encoding='utf-8') as f:
+            json.dump({"ir_to_data": ir_to_data}, f, indent=4)
+        print(f"✅ [{country_code}] po_lookup.json generado.")
+        
+    except Exception as e:
+        print(f"⚠️ Error procesando PO Extractor ({country_code}): {e}")
 
 async def load_grn_data_optimized(country_code: str):
     global df_grn_cache, grn_file_mtime
     
     grn_csv_path = get_country_csv_path(DATABASE_FOLDER, 'AURRSGLBD0280.csv', country_code)
+    json_cache_path = _get_json_cache_path(country_code, 'grn_cache.json')
+    
     if not os.path.exists(grn_csv_path):
         df_grn_cache[country_code] = None
         return
 
-    json_cache_path = os.path.join(os.path.dirname(grn_csv_path), 'grn_cache.json')
     current_mtime = os.path.getmtime(grn_csv_path)
     
-    if os.path.exists(json_cache_path) and grn_file_mtime.get(country_code) == current_mtime:
-        # Ya está cargado y actualizado
+    # Si el caché en memoria ya es válido, no hacer nada
+    if df_grn_cache.get(country_code) is not None and grn_file_mtime.get(country_code) == current_mtime:
         return
-    
-    print(f"Regenerando cache JSON para GRN ({country_code})...")
-    df_grn_raw = await read_csv_safe(grn_csv_path, columns=COLUMNS_TO_READ_GRN)
-    if df_grn_raw is not None:
-        grn_data = df_grn_raw.to_dict(orient='records')
+
+    # Intentar cargar desde JSON si el archivo CSV no ha cambiado
+    if os.path.exists(json_cache_path):
         try:
+            if os.path.getmtime(json_cache_path) >= current_mtime:
+                print(f"⚡ [{country_code}] Cargando GRN desde JSON cache...")
+                with open(json_cache_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                df_grn_cache[country_code] = pd.DataFrame(data)
+                grn_file_mtime[country_code] = current_mtime
+                return
+        except Exception as e:
+            print(f"⚠️ Error cargando JSON cache de GRN: {e}")
+
+    # Si no hay caché o es viejo, leer CSV
+    print(f"📖 [{country_code}] Regenerando cache JSON para GRN...")
+    # Intentamos leer sin especificar columnas primero para detectar nombres reales
+    try:
+        df_grn_raw = await run_in_threadpool(pd.read_csv, grn_csv_path, dtype=str)
+        if df_grn_raw is not None:
+            # Normalizar nombres de columnas (reemplazar espacios por guiones bajos)
+            df_grn_raw.columns = [c.strip().replace(' ', '_') for c in df_grn_raw.columns]
+            
+            # Guardar en caché JSON para rapidez futura
+            grn_data = df_grn_raw.to_dict(orient='records')
             with open(json_cache_path, 'w', encoding='utf-8') as f:
                 json.dump(grn_data, f)
+            
+            df_grn_cache[country_code] = df_grn_raw
             grn_file_mtime[country_code] = current_mtime
-            df_grn_cache[country_code] = df_grn_raw
-        except Exception:
-            df_grn_cache[country_code] = df_grn_raw
-    else:
+    except Exception as e:
+        print(f"❌ Error fatal leyendo GRN CSV: {e}")
         df_grn_cache[country_code] = None
 
 
 
-async def reload_cache_if_needed(country_code: str = "MX"):
+async def reload_cache_if_needed(country_code: str = "CL"):
     """
     Verifica si los archivos CSV cambiaron para un país determinado.
     """
@@ -159,13 +231,14 @@ async def reload_cache_if_needed(country_code: str = "MX"):
     
     if os.path.exists(item_master_path):
         mtime = os.path.getmtime(item_master_path)
-        if master_file_mtime.get(country_code) is not None and mtime != master_file_mtime.get(country_code):
+        # Si no está en memoria o el archivo cambió, recargar
+        if master_file_mtime.get(country_code) is None or mtime != master_file_mtime.get(country_code):
             need_reload = True
         master_file_mtime[country_code] = mtime
             
     if os.path.exists(grn_csv_path):
         mtime = os.path.getmtime(grn_csv_path)
-        if grn_file_mtime.get(country_code) is not None and mtime != grn_file_mtime.get(country_code):
+        if grn_file_mtime.get(country_code) is None or mtime != grn_file_mtime.get(country_code):
             need_reload = True
         grn_file_mtime[country_code] = mtime
     
@@ -175,7 +248,12 @@ async def reload_cache_if_needed(country_code: str = "MX"):
 
 
 
-async def get_item_details_from_master_csv(item_code: str, country_code: str = "MX"):
+def get_df_grn(country_code: str = "CL"):
+    """Devuelve el DataFrame de GRN (280) cargado en caché para un país."""
+    return df_grn_cache.get(country_code)
+
+
+async def get_item_details_from_master_csv(item_code: str, country_code: str = "CL"):
     """Busca detalles de un item leyendo el CSV del país correspondiente."""
     if not item_code:
         return None
@@ -209,7 +287,7 @@ async def get_item_details_from_master_csv(item_code: str, country_code: str = "
         print(f"Error buscando item {item_code} en CSV: {e}")
         raise HTTPException(status_code=500, detail="Error leyendo maestro de items.")
 
-async def get_total_expected_quantity_for_item(item_code_form: str, country_code: str = "MX"):
+async def get_total_expected_quantity_for_item(item_code_form: str, country_code: str = "CL"):
     """Suma la cantidad esperada para un item desde el archivo GRN cacheado del país."""
     cache = df_grn_cache.get(country_code)
     if cache is None:
@@ -221,7 +299,7 @@ async def get_total_expected_quantity_for_item(item_code_form: str, country_code
         return int(numeric_quantities.sum())
     return 0
 
-async def load_master_subset(columns: list, positive_stock_only: bool = False, country_code: str = "MX"):
+async def load_master_subset(columns: list, positive_stock_only: bool = False, country_code: str = "CL"):
     """Carga columnas específicas del maestro en memoria temporal para un país."""
     item_master_path = get_country_csv_path(DATABASE_FOLDER, 'AURRSGLBD0250.csv', country_code)
     if not os.path.exists(item_master_path):
@@ -254,7 +332,7 @@ async def load_master_subset(columns: list, positive_stock_only: bool = False, c
         raise HTTPException(status_code=500, detail="Error leyendo maestro de items.")
 
 
-async def get_locations_with_stock_count(country_code: str = "MX"):
+async def get_locations_with_stock_count(country_code: str = "CL"):
     """Calcula cuántas ubicaciones tienen stock físico > 0 para un país."""
     item_master_path = get_country_csv_path(DATABASE_FOLDER, 'AURRSGLBD0250.csv', country_code)
     if not os.path.exists(item_master_path):

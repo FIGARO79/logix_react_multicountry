@@ -52,7 +52,7 @@ def get_planner_paths(country_code: str):
         "plan": os.path.join(country_dir, "planner_data.json")
     }
 
-def load_config(country_code: str = "MX"):
+def load_config(country_code: str = "CL"):
     """Carga la configuración desde el archivo JSON del país, o usa defaults."""
     paths = get_planner_paths(country_code)
     config_file = paths["config"]
@@ -81,14 +81,14 @@ def load_config(country_code: str = "MX"):
             
     return config
 
-def save_config(config_data, country_code: str = "MX"):
+def save_config(config_data, country_code: str = "CL"):
     """Guarda la configuración en el archivo JSON del país."""
     paths = get_planner_paths(country_code)
     config_file = paths["config"]
     with open(config_file, 'w', encoding='utf-8') as f:
         json.dump(config_data, f, indent=4)
 
-def load_plan_data(country_code: str = "MX"):
+def load_plan_data(country_code: str = "CL"):
     """Carga los datos del plan calculeado/guardado para el país."""
     paths = get_planner_paths(country_code)
     plan_file = paths["plan"]
@@ -100,7 +100,7 @@ def load_plan_data(country_code: str = "MX"):
     except Exception:
         return None
 
-def save_plan_data(data, country_code: str = "MX"):
+def save_plan_data(data, country_code: str = "CL"):
     """Guarda los datos del plan en JSON para el país."""
     paths = get_planner_paths(country_code)
     plan_file = paths["plan"]
@@ -225,7 +225,7 @@ async def preview_count_plan(
     request: Request = None
 ):
     """Devuelve el plan en formato JSON para previsualización."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     df_output = await calculate_count_plan_data(start_date, end_date, db, country)
     
     # Convertir fechas a string para JSON
@@ -253,7 +253,7 @@ async def generate_count_plan(
     request: Request = None
 ):
     """Genera y descarga el Excel."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     df_output = await calculate_count_plan_data(start_date, end_date, db, country)
     
     # 5. Generar Excel
@@ -287,7 +287,7 @@ async def generate_count_plan(
 @router.get("/config")
 async def get_planner_config(request: Request, username: str = Depends(permission_required("planner"))):
     """Obtiene la configuración actual para el país."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     return load_config(country)
 
 @router.post("/config")
@@ -297,7 +297,7 @@ async def update_planner_config(
     username: str = Depends(permission_required("planner"))
 ):
     """Actualiza la configuración y la guarda para el país."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     try:
         # Validar formato de fechas
         datetime.datetime.strptime(config.start_date, '%Y-%m-%d')
@@ -314,7 +314,7 @@ async def update_planner_config(
 @router.get("/current_plan")
 async def get_current_plan(request: Request, username: str = Depends(permission_required("planner"))):
     """Obtiene el plan guardado (persistente) para el país."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     data = load_plan_data(country)
     if not data:
         return {}
@@ -329,7 +329,7 @@ async def update_count_plan(
     db: AsyncSession = Depends(get_db)
 ):
     """Calcula y guarda el plan para el país."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     df_output = await calculate_count_plan_data(start_date, end_date, db, country)
     
     # 2. Formatear igual que preview
@@ -362,7 +362,7 @@ async def get_daily_items_for_execution(
     db: AsyncSession = Depends(get_db)
 ):
     """Obtiene los items planificados para el país en la fecha específica."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     plan_data = load_plan_data(country)
     if not plan_data or "details" not in plan_data:
         return {"items": [], "has_previous_counts": False, "previous_count": 0}
@@ -447,7 +447,7 @@ async def get_items_with_differences(
     db: AsyncSession = Depends(get_db)
 ):
     """Obtiene las diferencias para el país."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     
     # Obtener items con diferencias de conteos previos
     stmt = select(CycleCountRecording).where(
@@ -523,7 +523,7 @@ async def save_daily_execution(
     db: AsyncSession = Depends(get_db)
 ):
     """Guarda los conteos ejecutados del día. Filtra por país."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     try:
         saved_count = 0
         updated_count = 0
@@ -592,7 +592,7 @@ async def get_execution_stats(
     db: AsyncSession = Depends(get_db)
 ):
     """Estadísticas filtradas por país."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     # Consultar todos los registros del año y país
     query = select(CycleCountRecording).where(
         CycleCountRecording.executed_date.like(f"{year}-%"),
@@ -659,7 +659,7 @@ async def get_cycle_count_differences(
     username: str = Depends(permission_required("planner")),
     db: AsyncSession = Depends(get_db)
 ):
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     """Listado filtrado por país."""
     query = select(CycleCountRecording).where(CycleCountRecording.country_code == country)
     
@@ -713,7 +713,7 @@ async def update_cycle_count_difference(
     db: AsyncSession = Depends(get_db)
 ):
     """Actualiza diferencia para el país."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     result = await db.execute(
         select(CycleCountRecording).where(
             CycleCountRecording.id == recording_id,

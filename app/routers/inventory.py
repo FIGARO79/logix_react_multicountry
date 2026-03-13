@@ -137,7 +137,7 @@ async def redirect_admin_inventory():
 @router.get('/admin/inventory', response_class=HTMLResponse, name='admin_inventory')
 async def admin_inventory_get(request: Request, user: str = Depends(permission_required("inventory")), db: AsyncSession = Depends(get_db)):
     """Página principal de administración de inventario."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     
     result = await db.execute(select(AppState).where(AppState.key == 'current_inventory_stage', AppState.country_code == country))
     stage = result.scalar_one_or_none()
@@ -169,7 +169,7 @@ async def start_inventory_stage_1(request: Request, user: str = Depends(permissi
     """Inicia un nuevo ciclo de inventario en Etapa 1."""
     
     try:
-        country = get_current_country(request) or "MX"
+        country = get_current_country(request) or "CL"
         print(f"Limpiando tablas de inventario para un nuevo ciclo en {country}...")
         await db.execute(delete(StockCount).where(StockCount.country_code == country))
         await db.execute(delete(CountSession).where(CountSession.country_code == country))
@@ -199,7 +199,7 @@ async def start_inventory_stage_1(request: Request, user: str = Depends(permissi
 @router.post('/admin/inventory/advance/{next_stage}', name='advance_inventory_stage')
 async def advance_inventory_stage(request: Request, next_stage: int, user: str = Depends(permission_required("inventory")), db: AsyncSession = Depends(get_db)):
     """Avanza el inventario a la siguiente etapa."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     prev_stage = next_stage - 1
     
     try:
@@ -250,7 +250,7 @@ async def finalize_inventory(request: Request, user: str = Depends(permission_re
     """Finaliza el ciclo de inventario para el país."""
     
     try:
-        country = get_current_country(request) or "MX"
+        country = get_current_country(request) or "CL"
         stmt_update = update(AppState).where(AppState.key == 'current_inventory_stage', AppState.country_code == country).values(value='0')
         await db.execute(stmt_update)
         await db.commit()
@@ -265,7 +265,7 @@ async def finalize_inventory(request: Request, user: str = Depends(permission_re
 @router.get('/admin/inventory/report', name='generate_inventory_report')
 async def generate_inventory_report(request: Request, user: str = Depends(permission_required("inventory"))):
     """Genera un reporte Excel del inventario."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     try:
         # Usamos pandas read_sql con connection para queries complejos de reporte
         async with async_engine.connect() as conn:
@@ -348,7 +348,7 @@ async def generate_inventory_report(request: Request, user: str = Depends(permis
 @router.get('/api/export_recount_list/{stage_number}', name='export_recount_list')
 async def export_recount_list(request: Request, stage_number: int, user: str = Depends(permission_required("inventory")), db: AsyncSession = Depends(get_db)):
     """Exporta la lista de items a recontar para una etapa específica."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
 
     result = await db.execute(select(RecountList.item_code).where(RecountList.stage_to_count == stage_number, RecountList.country_code == country))
     items_to_recount = result.all() # list of Row objects
@@ -403,7 +403,7 @@ async def export_recount_list(request: Request, stage_number: int, user: str = D
 @router.get('/api/admin/inventory/summary')
 async def get_inventory_summary_api(request: Request, user: str = Depends(permission_required("inventory")), db: AsyncSession = Depends(get_db)):
     """API: Obtiene el resumen del estado del inventario."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     stats = await get_inventory_summary_stats(db, country)
     
     # Obtener estado actual
@@ -420,7 +420,7 @@ async def get_inventory_summary_api(request: Request, user: str = Depends(permis
 @router.post('/api/admin/inventory/start_stage_1')
 async def start_inventory_stage_1_api(request: Request, user: str = Depends(permission_required("inventory")), db: AsyncSession = Depends(get_db)):
     """API: Inicia Etapa 1."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     # Reset Current Stage to 1
     result = await db.execute(select(AppState).where(AppState.key == 'current_inventory_stage', AppState.country_code == country))
     stage_state = result.scalar_one_or_none()
@@ -443,7 +443,7 @@ async def start_inventory_stage_1_api(request: Request, user: str = Depends(perm
 @router.post('/api/admin/inventory/advance_stage/{next_stage}')
 async def advance_inventory_stage_api(request: Request, next_stage: int, user: str = Depends(permission_required("inventory")), db: AsyncSession = Depends(get_db)):
     """API: Avanza etapa."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     # Validar next_stage logic...
     result = await db.execute(select(AppState).where(AppState.key == 'current_inventory_stage', AppState.country_code == country))
     stage_state = result.scalar_one_or_none()
@@ -488,7 +488,7 @@ async def advance_inventory_stage_api(request: Request, next_stage: int, user: s
 @router.post('/api/admin/inventory/finalize')
 async def finalize_inventory_api(request: Request, user: str = Depends(permission_required("inventory")), db: AsyncSession = Depends(get_db)):
     """API: Finaliza inventario."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     result = await db.execute(select(AppState).where(AppState.key == 'current_inventory_stage', AppState.country_code == country))
     stage_state = result.scalar_one_or_none()
     if stage_state:
@@ -506,7 +506,7 @@ async def manage_counts_page(request: Request, username: str = Depends(permissio
     if not isinstance(username, str):
         return username
     
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     counts = await db_counts.load_all_counts_db_async(db, country_code=country)
     
     return templates.TemplateResponse('manage_counts.html', {"request": request, "counts": counts})

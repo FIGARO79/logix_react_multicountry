@@ -15,7 +15,7 @@ router = APIRouter(prefix="/api", tags=["stock"])
 @router.get('/stock')
 async def get_stock(request: Request, username: str = Depends(permission_required("stock"))):
     """Obtiene datos de stock desde el CSV."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     stock_data = await csv_handler.get_stock_data(country_code=country)
     if stock_data is not None:
         return JSONResponse(stock_data.to_dict(orient='records'))
@@ -25,7 +25,7 @@ async def get_stock(request: Request, username: str = Depends(permission_require
 @router.get('/stock_item/{item_code}')
 async def get_stock_item(request: Request, item_code: str, username: str = Depends(permission_required("stock"))):
     """Obtiene información de stock para un item específico."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     item_details = await csv_handler.get_item_details_from_master_csv(item_code, country_code=country)
     if item_details is None:
         raise HTTPException(status_code=404, detail=f"Artículo {item_code} no encontrado.")
@@ -35,7 +35,7 @@ async def get_stock_item(request: Request, item_code: str, username: str = Depen
 @router.get('/get_item_details/{item_code}')
 async def get_item_details_for_label(request: Request, item_code: str, db: AsyncSession = Depends(get_db), username: str = Depends(permission_required("stock"))):
     """Obtiene detalles de un item para generar etiquetas."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     item_details = await csv_handler.get_item_details_from_master_csv(item_code, country_code=country)
     if not item_details:
         raise HTTPException(status_code=404, detail="Artículo no encontrado")

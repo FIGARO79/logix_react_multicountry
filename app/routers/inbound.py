@@ -41,7 +41,7 @@ async def add_log(
     db: AsyncSession = Depends(get_db),
     user: str = Depends(permission_required("inbound"))
 ):
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     # Buscar info del item en el CSV
     stock = await get_item_details_from_master_csv(data.itemCode, country_code=country)
     if not stock:
@@ -82,7 +82,7 @@ async def update_log(
     db: AsyncSession = Depends(get_db),
     user: str = Depends(permission_required("inbound"))
 ):
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     stmt = select(Log).where(Log.id == log_id, Log.country_code == country)
     result = await db.execute(stmt)
     log = result.scalar_one_or_none()
@@ -107,7 +107,7 @@ async def archive_logs(
     db: AsyncSession = Depends(get_db),
     user: str = Depends(permission_required("inbound"))
 ):
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     now = datetime.datetime.now().isoformat()
     # Archivar todo lo que no tenga fecha de archivo
     await db.execute(update(Log).where(Log.archived_at == None, Log.country_code == country).values(archived_at=now))
@@ -121,7 +121,7 @@ async def get_versions(
     db: AsyncSession = Depends(get_db),
     user: str = Depends(permission_required("inbound"))
 ):
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     res = await db.execute(select(Log.archived_at).distinct().where(Log.archived_at != None, Log.country_code == country).order_by(desc(Log.archived_at)))
     return res.scalars().all()
 
@@ -134,7 +134,7 @@ async def export_logs(
     db: AsyncSession = Depends(get_db),
     user: str = Depends(permission_required("inbound"))
 ):
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     query = select(Log).where(Log.country_code == country)
     
     if version:

@@ -1,0 +1,16 @@
+{
+    "item_patterns": {
+        "001010-067": {
+            "EC8H": 1
+        }
+    },
+    "category_patterns": {
+        "0": {
+            "EC8H": 1
+        }
+    },
+    "stats": {
+        "total_learned": 1,
+        "last_update": "2026-03-06T20:15:40.668551"
+    }
+}

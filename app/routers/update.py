@@ -30,6 +30,67 @@ router = APIRouter(
     tags=["update"]
 )
 
+from starlette.concurrency import run_in_threadpool
+from pydantic import BaseModel
+
+# Estado global del Robot para consulta desde el frontend
+po_robot_status = {
+    "status": "idle", # idle, running, success, error
+    "message": ""
+}
+
+class RobotPayload(BaseModel):
+    start_date: str
+    end_date: str
+    countries: list = ["CO"] # Lista de códigos de país
+
+@router.post('/api/run_po_robot', response_class=JSONResponse)
+async def run_po_robot_api(
+    request: Request,
+    payload: RobotPayload,
+    background_tasks: BackgroundTasks,
+    username: str = Depends(login_required)
+):
+    """Lanza el robot de Playwright en segundo plano."""
+    # El país principal sigue siendo el de la sesión para el procesamiento posterior,
+    # pero el robot descarga lo que se le pida en payload.countries.
+    session_country = get_current_country(request) or "CL"
+    
+    async def run_robot_task():
+        global po_robot_status
+        po_robot_status["status"] = "running"
+        po_robot_status["message"] = f"Iniciando descarga secuencial para {payload.countries}..."
+        
+        try:
+            from app.services.po_robot import run_po_robot
+            # Ejecutar el robot con el ciclo por países
+            success, msg = await run_in_threadpool(run_po_robot, payload.countries, payload.start_date, payload.end_date, DATABASE_FOLDER)
+            
+            if not success:
+                po_robot_status["status"] = "error"
+                po_robot_status["message"] = f"Error en Robot: {msg}"
+            else:
+                po_robot_status["message"] = f"Descargas OK. Procesando país actual ({session_country})..."
+                # Procesar solo el país de la sesión tras la descarga masiva
+                msg_proc = await load_csv_data(country_code=session_country)
+                
+                po_robot_status["status"] = "success"
+                po_robot_status["message"] = f"Automatización completada. {msg_proc or ''}"
+                
+        except Exception as e:
+            po_robot_status["status"] = "error"
+            po_robot_status["message"] = f"Error crítico: {str(e)}"
+            print(f"❌ {po_robot_status['message']}")
+
+    background_tasks.add_task(run_robot_task)
+    return JSONResponse(content={"message": "Robot iniciado en segundo plano"})
+
+@router.get('/api/po_robot_status')
+async def get_po_robot_status(username: str = Depends(login_required)):
+    """Consulta el estado actual del robot."""
+    return JSONResponse(content=po_robot_status)
+
+
 # --- Endpoint para la página de actualización (GET) ---
 @router.get('/update', response_class=HTMLResponse)
 async def update_files_get(request: Request, username: str = Depends(login_required)):
@@ -61,8 +122,20 @@ async def update_files_post(
     message = ""
     error = ""
 
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     
+    # --- AUTO-SNAPSHOT DE CONCILIACIÓN (NUEVO) ---
+    # Antes de actualizar cualquier archivo, guardamos el estado actual si hay logs activos
+    try:
+        from app.services import reconciliation_service
+        # El snapshot es asíncrono pero esperamos a que termine para seguridad de los datos
+        auto_snap = await reconciliation_service.auto_snapshot_before_update(db, country, username)
+        if auto_snap:
+            message += f"✅ Snapshot automático generado: {auto_snap}. "
+    except Exception as e:
+        print(f"⚠️ Error en snapshot automático ({country}): {e}")
+    # ----------------------------------------------
+
     # Manejo del maestro de items
     if item_master and item_master.filename:
         target_path = get_country_csv_path(DATABASE_FOLDER, 'AURRSGLBD0250.csv', country)
@@ -166,7 +239,7 @@ async def clear_database_api(request: Request, password: str = Form(...), db: As
     if password != ADMIN_PASSWORD:
         return JSONResponse(status_code=401, content={"error": "Contraseña incorrecta"})
     
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     try:
         await db.execute(delete(Log).where(Log.country_code == country))
         await db.commit()
@@ -176,7 +249,7 @@ async def clear_database_api(request: Request, password: str = Form(...), db: As
 
 @router.post('/clear_database')
 async def clear_database(request: Request, password: str = Form(...), db: AsyncSession = Depends(get_db)):
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     # La URL de redirección debe ser construida correctamente
     redirect_url = request.url_for('update_files_get')
 
@@ -203,7 +276,7 @@ async def export_all_log_api(request: Request, password: str = Form(...), db: As
     if password != ADMIN_PASSWORD:
          return JSONResponse(status_code=401, content={"error": "Contraseña incorrecta"})
 
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     try:
         from app.services import db_logs
         from openpyxl.utils import get_column_letter

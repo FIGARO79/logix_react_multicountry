@@ -6,21 +6,20 @@ import '../styles/Layout.css';
 const MenuItem = ({ to, icon, label, onClick }) => {
     const location = useLocation();
     const isActive = location.pathname === to || (to !== '/' && location.pathname.startsWith(to));
-return (
-    <Link
-        to={to}
-        className={`flex items-center px-4 py-1 text-white transition-colors border-l-[4px] 
-        ${isActive ? 'bg-white/10 border-[var(--sap-primary)]' : 'hover:bg-white/10 border-transparent hover:border-[var(--sap-primary)]'}`}
-        onClick={onClick}
-    >
-        <div className="mr-3 text-white/70">
-            {icon}
-        </div>
-        <span className="text-sm font-medium tracking-wide">
-            {label}
-        </span>
-    </Link>
-);
+
+    return (
+        <Link
+            to={to}
+            className={`flex items-center px-4 py-1 text-white transition-colors border-l-[4px] 
+            ${isActive ? 'bg-white/10 border-[var(--sap-primary)]' : 'hover:bg-white/10 border-transparent hover:border-[var(--sap-primary)]'}`}
+            onClick={onClick}
+        >
+            <div className="w-8 flex justify-center opacity-80">
+                {icon}
+            </div>
+            <span className="text-sm font-medium tracking-wide ml-2">{label}</span>
+        </Link>
+    );
 };
 
 // Icons as components for reusable clean code
@@ -108,6 +107,7 @@ const Layout = () => {
 
                     {/* INVENTARIO (CONTEOS) */}
                     <div className="px-4 py-1 text-xs font-semibold text-white/50 uppercase tracking-wider">Inventario</div>
+                    <MenuItem to="/dashboard_inventario" icon={<ChartIcon />} label="Dashboard Inteligencia" onClick={toggleMenu} />
                     <MenuItem to="/planner" icon={<ChartIcon />} label="Plan Cíclico" onClick={toggleMenu} />
                     <MenuItem to="/view_counts/recordings" icon={<CheckSquareIcon />} label="Reporte Cíclicos" onClick={toggleMenu} />
                     <MenuItem to="/planner/manage_differences" icon={<ChecklistIcon />} label="Diferencias Cíclicos" onClick={toggleMenu} />
@@ -119,6 +119,7 @@ const Layout = () => {
 
                     {/* ADMINISTRACIÓN */}
                     <div className="px-4 py-1 text-xs font-semibold text-white/50 uppercase tracking-wider">Administración</div>
+                    <MenuItem to="/admin/slotting" icon={<ChartIcon />} label="Config. Slotting" onClick={toggleMenu} />
                     <MenuItem to="/admin/inventory" icon={<CheckSquareIcon />} label="Admin Inventario" onClick={toggleMenu} />
                     <MenuItem to="/counts/manage" icon={<ChecklistIcon />} label="Gestionar Conteos" onClick={toggleMenu} />
                     <MenuItem to="/update" icon={<ArrowRepeatIcon />} label="Actualizar Ficheros" onClick={toggleMenu} />

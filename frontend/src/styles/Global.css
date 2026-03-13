@@ -9,9 +9,9 @@
 /* ===== SAP Fiori Inspired Theme (Quartz Light / Belize) ===== */
 :root {
     /* Colors */
-    --sap-primary: #0a6ed1;
-    /* Belize Blue */
-    --sap-primary-dark: #005483;
+    --sap-primary: #285f94;
+    /* Belize Blue update */
+    --sap-primary-dark: #1e4a74;
     --sap-accent: #eebf22;
     /* Gold/Yellow */
     --sap-bg: #f7f7f7;
@@ -29,7 +29,7 @@
     --sap-critical: #e9730c;
     --sap-negative: #bb0000;
     --sap-positive: #107e3e;
-    --sap-informative: #0a6ed1;
+    --sap-informative: #285f94;
     --sap-neutral: #6a6d70;
 
     /* Shell / Header */
@@ -178,7 +178,7 @@ select {
 input:focus,
 select:focus {
     border-color: var(--sap-primary);
-    box-shadow: 0 0 0 2px rgba(10, 110, 209, 0.1);
+    box-shadow: 0 0 0 2px rgba(40, 95, 148, 0.1);
 }
 
 /* Underlined input style variant found in login */

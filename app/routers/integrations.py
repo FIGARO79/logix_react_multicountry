@@ -18,7 +18,7 @@ def verify_api_key(x_api_key: str = Header(..., description="API Key para integr
 @router.post("/upload/csv")
 async def upload_ssrs_csv(
     report_name: str, 
-    country_code: str = Query("MX", description="Código de país (MX, PE, CL, etc.)"),
+    country_code: str = Query("CL", description="Código de país (MX, PE, CL, etc.)"),
     file: UploadFile = File(...), 
     api_key: str = Depends(verify_api_key)
 ):

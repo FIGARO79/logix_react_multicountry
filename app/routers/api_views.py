@@ -4,9 +4,10 @@ from sqlalchemy import text, select
 from app.core.db import get_db
 from app.utils.auth import get_current_user, login_required
 from app.utils.country import get_current_country
-from app.services import db_logs, csv_handler, db_counts
+from app.services import db_logs, csv_handler, db_counts, reconciliation_service
 from app.core.config import ASYNC_DB_URL
-from app.models.sql_models import PickingAudit, PickingAuditItem, PickingPackageItem, CountSession, CycleCountRecording
+from app.models.sql_models import PickingAudit, PickingAuditItem, PickingPackageItem, CountSession, CycleCountRecording, ReconciliationHistory
+from sqlalchemy import desc, distinct
 import pandas as pd
 from typing import List, Optional, Any, Dict
 from pydantic import BaseModel
@@ -65,17 +66,19 @@ class PackingListResponse(BaseModel):
 
 class InboundLogItem(BaseModel):
     id: int
-    timestamp: str
-    username: str
-    itemCode: str
-    description: str
-    quantity: int
-    cycle_count: int
-    binLocation: str
-    relocatedBin: str
-    qtyReceived: int
-    difference: int
-    observaciones: Optional[str]
+    timestamp: Optional[str] = ""
+    username: Optional[str] = ""
+    itemCode: Optional[str] = ""
+    description: Optional[str] = ""
+    quantity: Optional[int] = 0
+    cycle_count: Optional[int] = 0
+    binLocation: Optional[str] = ""
+    relocatedBin: Optional[str] = ""
+    qtyReceived: Optional[int] = 0
+    difference: Optional[int] = 0
+    observaciones: Optional[str] = ""
+    importReference: Optional[str] = ""
+    waybill: Optional[str] = ""
 
 # --- DB Engine for Pandas ---
 async_engine = create_async_engine(
@@ -96,102 +99,81 @@ async def get_current_user_info(request: Request, username: str = Depends(login_
 async def get_reconciliation_data(
     request: Request,
     archive_date: Optional[str] = None, 
+    snapshot_date: Optional[str] = None,
     username: str = Depends(login_required),
     db: AsyncSession = Depends(get_db)
 ):
-    country = get_current_country(request) or "MX"
-    await csv_handler.reload_cache_if_needed(country_code=country)
-    
+    country = get_current_country(request) or "CL"
     try:
+        # 0. Obtener lista de versiones disponibles (Logs archivados y Snapshots guardados)
         archive_versions = await db_logs.get_archived_versions_db_async(db, country_code=country)
         
-        async with async_engine.connect() as conn:
-            if archive_date:
-                query = text('SELECT * FROM logs WHERE archived_at = :date AND country_code = :country')
-                logs_df = await conn.run_sync(lambda sync_conn: pd.read_sql_query(query, sync_conn, params={"date": archive_date, "country": country}))
-            else:
-                query = text('SELECT * FROM logs WHERE archived_at IS NULL AND country_code = :country')
-                logs_df = await conn.run_sync(lambda sync_conn: pd.read_sql_query(query, sync_conn, params={"country": country}))
-        
-        grn_df = csv_handler.df_grn_cache.get(country)
-        
-        if logs_df.empty or grn_df is None:
-            return {
-                "data": [],
-                "archive_versions": archive_versions,
-                "current_archive_date": archive_date
-            }
-            
-        # --- Data Processing Logic (Identical to Original) ---
-        # Limpiar comas antes de convertir a numérico
-        clean_qty_rec = logs_df['qtyReceived'].astype(str).str.replace(',', '', regex=False)
-        logs_df['qtyReceived'] = pd.to_numeric(clean_qty_rec, errors='coerce').fillna(0)
-        
-        clean_qty_grn = grn_df['Quantity'].astype(str).str.replace(',', '', regex=False)
-        grn_df['Quantity'] = pd.to_numeric(clean_qty_grn, errors='coerce').fillna(0)
+        stmt_snap = select(distinct(ReconciliationHistory.archive_date)).where(ReconciliationHistory.country_code == country).order_by(desc(ReconciliationHistory.archive_date))
+        res_snap = await db.execute(stmt_snap)
+        snapshot_versions = [v for v in res_snap.scalars().all()]
 
-        items_in_file = grn_df['Item_Code'].unique()
-        logs_df_filtered = logs_df[logs_df['itemCode'].isin(items_in_file)]
-
-        item_totals = logs_df_filtered.groupby(['itemCode'])['qtyReceived'].sum().reset_index()
-        item_totals = item_totals.rename(columns={'itemCode': 'Item_Code', 'qtyReceived': 'Total_Recibido'})
-
-        item_expected_totals = grn_df.groupby(['Item_Code'])['Quantity'].sum().reset_index()
-        item_expected_totals = item_expected_totals.rename(columns={'Quantity': 'Total_Esperado_Item'})
-
-        grn_lines = grn_df[['GRN_Number', 'Item_Code', 'Item_Description', 'Quantity']].copy()
-        grn_lines = grn_lines.rename(columns={'Quantity': 'Cant_Esperada_Linea'})
-
-        merged_df = pd.merge(grn_lines, item_totals, on='Item_Code', how='left')
-        merged_df = pd.merge(merged_df, item_expected_totals, on='Item_Code', how='left')
-
-        if not logs_df_filtered.empty:
-            logs_df_filtered['id'] = pd.to_numeric(logs_df_filtered['id'])
-            latest_logs = logs_df_filtered.sort_values('id', ascending=False).drop_duplicates('itemCode')
-            
-            locations_df = latest_logs[['itemCode', 'binLocation', 'relocatedBin']].rename(
-                columns={'itemCode': 'Item_Code', 'binLocation': 'Bin_Original', 'relocatedBin': 'Bin_Reubicado'}
+        # 1. Si se solicita un Snapshot (Congelado en ReconciliationHistory)
+        if snapshot_date:
+            stmt = select(ReconciliationHistory).where(
+                ReconciliationHistory.archive_date == snapshot_date,
+                ReconciliationHistory.country_code == country
             )
-            merged_df = pd.merge(merged_df, locations_df, on='Item_Code', how='left')
+            res = await db.execute(stmt)
+            rows = res.scalars().all()
+            
+            result_data = [{
+                "Import_Reference": r.import_reference,
+                "Waybill": r.waybill,
+                "GRN": r.grn,
+                "Codigo_Item": r.item_code,
+                "Descripcion": r.description,
+                "Ubicacion": r.bin_location,
+                "Reubicado": r.relocated_bin,
+                "Cant_Esperada": r.qty_expected,
+                "Cant_Recibida": r.qty_received,
+                "Diferencia": r.difference
+            } for r in rows]
 
-        merged_df['Total_Recibido'] = merged_df['Total_Recibido'].fillna(0)
-        merged_df['Cant_Esperada_Linea'] = merged_df['Cant_Esperada_Linea'].fillna(0)
-        merged_df['Total_Esperado_Item'] = merged_df['Total_Esperado_Item'].fillna(0)
-        merged_df['Diferencia'] = merged_df['Total_Recibido'] - merged_df['Total_Esperado_Item']
-        
-        merged_df.fillna({'Bin_Original': 'N/A', 'Bin_Reubicado': ''}, inplace=True)
-        
-        merged_df['Total_Recibido'] = merged_df['Total_Recibido'].astype(int)
-        merged_df['Cant_Esperada_Linea'] = merged_df['Cant_Esperada_Linea'].astype(int)
-        merged_df['Total_Esperado_Item'] = merged_df['Total_Esperado_Item'].astype(int)
-        merged_df['Diferencia'] = merged_df['Diferencia'].astype(int)
+            return {
+                "data": result_data,
+                "archive_versions": archive_versions,
+                "snapshot_versions": snapshot_versions,
+                "current_snapshot_date": snapshot_date
+            }
 
-        merged_df = merged_df.sort_values('GRN_Number', ascending=True)
-
-        # Standardize keys for JSON
-        result_data = merged_df.rename(columns={
-            'GRN_Number': 'GRN',
-            'Item_Code': 'Codigo_Item',
-            'Item_Description': 'Descripcion',
-            'Bin_Original': 'Ubicacion',
-            'Bin_Reubicado': 'Reubicado',
-            'Cant_Esperada_Linea': 'Cant_Esperada',
-            'Total_Recibido': 'Cant_Recibida',
-            'Diferencia': 'Diferencia'
-        }).to_dict(orient='records')
+        # 2. Lógica de cálculo (Tiempo real o logs archivados) usando el servicio
+        result_data = await reconciliation_service.get_reconciliation_calculations(db, country, archive_date)
         
         return {
             "data": result_data,
             "archive_versions": archive_versions,
+            "snapshot_versions": snapshot_versions,
             "current_archive_date": archive_date
         }
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/reconciliation/archive")
+async def archive_reconciliation_snapshot(
+    request: Request,
+    data: List[dict], 
+    username: str = Depends(login_required),
+    db: AsyncSession = Depends(get_db)
+):
+    """Guarda una instantánea de la conciliación actual en ReconciliationHistory."""
+    country = get_current_country(request) or "CL"
+    try:
+        archive_date = await reconciliation_service.create_snapshot(db, country, data, username)
+        return {"message": "Instantánea guardada correctamente", "archive_date": archive_date}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al archivar: {e}")
 
 @router.get('/view_picking_audits', response_model=List[PickingAuditSummary])
 async def view_picking_audits_api(request: Request, username: str = Depends(login_required), db: AsyncSession = Depends(get_db)):
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     result = await db.execute(select(PickingAudit).where(PickingAudit.country_code == country).order_by(PickingAudit.id.desc()))
     audits_orm = result.scalars().all()
     
@@ -257,7 +239,7 @@ async def get_counts_data(
     username: str = Depends(login_required), 
     db: AsyncSession = Depends(get_db)
 ):
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     from app.services.csv_handler import master_qty_map
     
     all_counts = await db_counts.load_all_counts_db_async(db, country_code=country)
@@ -330,7 +312,7 @@ async def get_cycle_count_recordings(
     from app.models.sql_models import MasterItem
     
     # Cargar registros de la DB
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     t1 = time.time()
     result = await db.execute(select(CycleCountRecording).where(CycleCountRecording.country_code == country).order_by(CycleCountRecording.id.desc()))
     recordings = result.scalars().all()
@@ -429,22 +411,36 @@ async def get_inbound_logs(
     username: str = Depends(login_required), 
     db: AsyncSession = Depends(get_db)
 ):
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     all_logs = await db_logs.load_log_data_db_async(db, country_code=country)
-    # Convert logs dictionary list to Pydantic models or let FastAPI do it (it validates against response_model)
-    # Ensure keys match InboundLogItem
     
-    # Simple correction if keys differ
     cleaned_logs = []
     for log in all_logs:
-        cleaned_logs.append({
-             **log,
-             # Ensure numeric fields are actually numbers if they come as strings
-             "qtyReceived": int(log.get('qtyReceived')) if str(log.get('qtyReceived')).isdigit() else 0,
-             "difference": int(log.get('difference')) if str(log.get('difference')).replace('-','').isdigit() else 0,
-             "Quantity": int(log.get('Quantity')) if str(log.get('Quantity')).isdigit() else 0, # Map to quantity if needed
-             "quantity": int(log.get('Quantity')) if str(log.get('Quantity')).isdigit() else 0, # Case insensitive fix
-        })
+        # Asegurar que los campos numéricos sean válidos
+        def _to_int(val):
+            try:
+                return int(float(str(val).replace(',', '')))
+            except:
+                return 0
+
+        # Mapear campos para que coincidan con el modelo Pydantic
+        item = {
+             "id": log.get('id'),
+             "timestamp": str(log.get('timestamp', '')),
+             "username": str(log.get('username', '')),
+             "itemCode": str(log.get('itemCode', '')),
+             "description": str(log.get('itemDescription', log.get('description', ''))),
+             "quantity": _to_int(log.get('qtyReceived', 0)),
+             "qtyReceived": _to_int(log.get('qtyReceived', 0)),
+             "difference": _to_int(log.get('difference', 0)),
+             "binLocation": str(log.get('binLocation', '')),
+             "relocatedBin": str(log.get('relocatedBin', '')),
+             "importReference": str(log.get('importReference', '')),
+             "waybill": str(log.get('waybill', '')),
+             "observaciones": str(log.get('observaciones', '')),
+             "cycle_count": 0 # Default if not present
+        }
+        cleaned_logs.append(item)
         
     return cleaned_logs
 
@@ -457,7 +453,7 @@ async def get_packing_list_data(
     db: AsyncSession = Depends(get_db)
 ):
     
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     # Obtener la auditoría
     result = await db.execute(
         select(PickingAudit).where(PickingAudit.id == audit_id, PickingAudit.country_code == country)

@@ -1,0 +1,5308 @@
+{
+    "turnover": {
+        "W": {
+            "range": ">30",
+            "spot": "hot"
+        },
+        "X": {
+            "range": ">= 11 <=30",
+            "spot": "hot"
+        },
+        "Y": {
+            "range": ">= 7 <=10",
+            "spot": "warm"
+        },
+        "K": {
+            "range": ">= 5 <=6",
+            "spot": "warm"
+        },
+        "L": {
+            "range": ">= 3 <=4",
+            "spot": "cold"
+        },
+        "Z": {
+            "range": ">= 1 <=2",
+            "spot": "cold"
+        },
+        "0": {
+            "range": "0",
+            "spot": "cold"
+        }
+    },
+    "storage": {
+        "CA0100": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "CA0101": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "CA0102": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "CA0103": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "CA0104": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "CA0105": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "CA0200": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "CA0300": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "CA0301": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "CA0302": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "CA0303": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "CA0304": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "CA0305": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "CA0500": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "CA0501": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "CA0502": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "CA0503": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "CA0504": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "CA0505": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "CA0601": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "CA0602": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "CA0603": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "CA0604": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "CA0605": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "CA0700": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "CA0701": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "CA0702": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "CA0703": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "CA0704": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "CA0705": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "CA0800": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "CA0801": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "CA0802": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "CA0803": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "CA0804": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "CA0900": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "CA0901": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "CA0902": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "CA0903": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "CA0904": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "CA0905": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "CA1100": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "CA1101": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "CA1102": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "CA1103": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "CA1104": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "CA1105": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "CA1200": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "CA1201": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "CA1202": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "CA1300": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "CA1301": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "CA1302": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "CA1303": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "CA1304": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "CA1305": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "CA1500": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "CA1501": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "CA1502": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "CA1503": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "CA1504": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "CA1505": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "CA1604": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "CA1700": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "CA1701": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "CA1702": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "CA1703": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "CA1704": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "CA1705": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "CA1900": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "CA1901": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "CA1902": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "CA1903": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "CA1904": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "CA1905": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "CA2100": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "CA2101": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "CA2102": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "CA2103": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "CA2104": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "CA2105": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "CA2300": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "CA2301": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "CA2302": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "CA2303": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "CA2304": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "CA2305": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "CA2500": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "CA2501": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "CA2503": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "CA2504": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "CA2505": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "CA2700": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "CA2701": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "CA2702": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "CA2703": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "CA2704": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "CA2705": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "CA2900": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "CA2901": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "CA2902": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "CA2903": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "CA2904": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "CA2905": {
+            "zone": "Cantilever",
+            "aisle": "CA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "EB1A": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "EB1B": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "EB1C": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "EB1D": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "EB1E": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "EB1F": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "EB1G": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "EB1H": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "EB2A": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "EB2B": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "EB2C": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "EB2D": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "EB2E": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "EB2F": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "EB2G": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "EB2H": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "EB3A": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "EB3B": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "EB3C": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "EB3D": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "EB3E": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "EB3F": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "EB3G": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "EB3H": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "EB4A": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "EB4B": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "EB4C": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "EB4D": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "EB4E": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "EB4F": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "EB4G": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "EB4H": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "EB5A": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "EB5B": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "EB5C": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "EB5D": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "EB5E": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "EB5F": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "EB5G": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "EB5H": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "EB6A": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "EB6B": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "EB6C": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "EB6D": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "EB6E": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "EB6F": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "EB6G": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "EB6H": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "EB7A": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "EB7B": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "EB7C": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "EB7D": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "EB7E": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "EB7F": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "EB7G": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "EB7H": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "EB8A": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 8,
+            "spot": "Cold"
+        },
+        "EB8B": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 8,
+            "spot": "Cold"
+        },
+        "EB8C": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 8,
+            "spot": "Cold"
+        },
+        "EB8D": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 8,
+            "spot": "Cold"
+        },
+        "EB8E": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 8,
+            "spot": "Cold"
+        },
+        "EB8F": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 8,
+            "spot": "Cold"
+        },
+        "EB8G": {
+            "zone": "Minuteria",
+            "aisle": "EB",
+            "level": 8,
+            "spot": "Cold"
+        },
+        "EC1A": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "EC1B": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "EC1C": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "EC1D": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "EC1E": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "EC1F": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "EC1G": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "EC1H": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "EC2A": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "EC2B": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "EC2C": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "EC2D": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "EC2E": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "EC2F": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "EC2G": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "EC2H": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "EC3A": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "EC3B": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "EC3C": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "EC3D": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "EC3E": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "EC3F": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "EC3G": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "EC3H": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "EC4A": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "EC4B": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "EC4C": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "EC4D": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "EC4E": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "EC4F": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "EC4G": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "EC4H": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "EC5A": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "EC5B": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "EC5C": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "EC5D": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "EC5E": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "EC5F": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "EC5G": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "EC5H": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "EC6A": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "EC6B": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "EC6C": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "EC6D": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "EC6E": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "EC6F": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "EC6G": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "EC6H": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "EC7A": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "EC7B": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "EC7C": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "EC7D": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "EC7E": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "EC7F": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "EC7G": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "EC7H": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "EC8A": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 8,
+            "spot": "Cold"
+        },
+        "EC8B": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 8,
+            "spot": "Cold"
+        },
+        "EC8C": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 8,
+            "spot": "Cold"
+        },
+        "EC8D": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 8,
+            "spot": "Cold"
+        },
+        "EC8E": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 8,
+            "spot": "Cold"
+        },
+        "EC8F": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 8,
+            "spot": "Cold"
+        },
+        "EC8G": {
+            "zone": "Minuteria",
+            "aisle": "EC",
+            "level": 8,
+            "spot": "Cold"
+        },
+        "ED1A": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "ED1B": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "ED1C": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "ED1D": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "ED1E": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "ED1F": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "ED1G": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "ED1H": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "ED2A": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "ED2B": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "ED2C": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "ED2D": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "ED2E": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "ED2F": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "ED2G": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "ED2H": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "ED3A": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "ED3B": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "ED3C": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "ED3D": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "ED3E": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "ED3F": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "ED3G": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "ED3H": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "ED4A": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "ED4B": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "ED4C": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "ED4D": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "ED4E": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "ED4F": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "ED4G": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "ED4H": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "ED5A": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "ED5B": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "ED5C": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "ED5D": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "ED5E": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "ED5F": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "ED5G": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "ED5H": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "ED6A": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "ED6B": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "ED6C": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "ED6D": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "ED6E": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "ED6F": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "ED6G": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "ED6H": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "ED7A": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "ED7B": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "ED7C": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "ED7D": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "ED7E": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "ED7F": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "ED7G": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "ED7H": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "ED8A": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 8,
+            "spot": "Cold"
+        },
+        "ED8B": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 8,
+            "spot": "Cold"
+        },
+        "ED8C": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 8,
+            "spot": "Cold"
+        },
+        "ED8D": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 8,
+            "spot": "Cold"
+        },
+        "ED8E": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 8,
+            "spot": "Cold"
+        },
+        "ED8F": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 8,
+            "spot": "Cold"
+        },
+        "ED8G": {
+            "zone": "Minuteria",
+            "aisle": "ED",
+            "level": 8,
+            "spot": "Cold"
+        },
+        "EE1A": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "EE1B": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "EE1C": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "EE1D": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "EE1E": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "EE1F": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "EE1G": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "EE1H": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 1,
+            "spot": "Cold"
+        },
+        "EE2A": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "EE2B": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "EE2C": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "EE2D": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "EE2E": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "EE2F": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "EE2G": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "EE2H": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "EE3A": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "EE3B": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "EE3C": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "EE3D": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "EE3E": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "EE3F": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "EE3G": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "EE3H": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 3,
+            "spot": "Hot"
+        },
+        "EE4A": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "EE4B": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "EE4C": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "EE4D": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "EE4E": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "EE4F": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "EE4G": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "EE4H": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 4,
+            "spot": "Hot"
+        },
+        "EE5A": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "EE5B": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "EE5C": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "EE5D": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "EE5E": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "EE5F": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "EE5G": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "EE5H": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 5,
+            "spot": "Hot"
+        },
+        "EE6A": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "EE6B": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "EE6C": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "EE6D": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "EE6E": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "EE6F": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "EE6G": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "EE6H": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 6,
+            "spot": "Warm"
+        },
+        "EE7A": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "EE7B": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "EE7C": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "EE7D": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "EE7E": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "EE7F": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "EE7G": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "EE7H": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 7,
+            "spot": "Cold"
+        },
+        "EE8A": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 8,
+            "spot": "Cold"
+        },
+        "EE8B": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 8,
+            "spot": "Cold"
+        },
+        "EE8C": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 8,
+            "spot": "Cold"
+        },
+        "EE8D": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 8,
+            "spot": "Cold"
+        },
+        "EE8E": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 8,
+            "spot": "Cold"
+        },
+        "EE8F": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 8,
+            "spot": "Cold"
+        },
+        "EE8G": {
+            "zone": "Minuteria",
+            "aisle": "EE",
+            "level": 8,
+            "spot": "Cold"
+        },
+        "ISLA": {
+            "zone": "Floor",
+            "aisle": "Piso",
+            "level": 0,
+            "spot": "Cold"
+        },
+        "RA10A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RA10B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RA10C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RA11A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RA11B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RA11C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RA12A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RA12B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RA12C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RA13A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RA13B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RA13C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RA14A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RA14B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RA14C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RA15A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RA15B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RA15C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RA20A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RA20B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RA20C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RA21A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RA21B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RA21C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RA22A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RA22B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RA22C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RA23A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RA23B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RA23C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RA24A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RA24B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RA24C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RA25A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RA25B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RA25C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RA30A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RA30B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RA30C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RA31A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RA31B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RA31C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RA32A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RA32B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RA32C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RA33A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RA33B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RA33C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RA34A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RA34B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RA34C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RA35A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RA35B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RA35C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RA40A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RA40B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RA40C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RA41A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RA41B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RA41C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RA42A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RA42B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RA42C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RA43A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RA43B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RA43C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RA44A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RA44B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RA44C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RA45A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RA45B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RA45C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RA50A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RA50B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RA50C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RA51A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RA51B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RA51C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RA52A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RA52B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RA52C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RA53A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RA53B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RA53C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RA54A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RA54B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RA54C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RA55A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RA55B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RA55C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RA60A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RA60B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RA60C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RA61A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RA61B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RA61C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RA62A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RA62B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RA62C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RA63A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RA63B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RA63C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RA64A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RA64B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RA64C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RA65A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RA65B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RA65C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RA70A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RA70B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RA70C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RA71A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RA71B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RA71C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RA72A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RA72B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RA72C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RA73A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RA73B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RA73C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RA74A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RA74B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RA74C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RA75A": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RA75B": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RA75C": {
+            "zone": "Rack",
+            "aisle": "RA",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RB20A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RB20B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RB20C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RB21A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RB21B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RB21C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RB22A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RB22B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RB22C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RB23A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RB23B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RB23C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RB24A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RB24B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RB24C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RB25A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RB25B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RB25C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RB30A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RB30B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RB30C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RB31A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RB31B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RB31C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RB32A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RB32B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RB32C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RB33A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RB33B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RB33C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RB34A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RB34B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RB34C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RB35A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RB35B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RB35C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RB40A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RB40B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RB40C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RB41A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RB41B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RB41C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RB42A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RB42B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RB42C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RB43A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RB43B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RB43C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RB44A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RB44B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RB44C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RB45A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RB45B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RB45C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RB50A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RB50B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RB50C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RB51A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RB51B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RB51C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RB52A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RB52B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RB52C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RB53A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RB53B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RB53C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RB54A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RB54B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RB54C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RB55A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RB55B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RB55C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RB60A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RB60B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RB60C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RB61A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RB61B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RB61C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RB62A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RB62B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RB62C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RB63A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RB63B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RB63C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RB64A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RB64B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RB64C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RB65A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RB65B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RB65C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RB73A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RB73B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RB73C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RB74A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RB74B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RB74C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RB75A": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RB75B": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RB75C": {
+            "zone": "Rack",
+            "aisle": "RB",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RC20A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RC20B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RC20C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RC21A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RC21B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RC21C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RC22A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RC22B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RC22C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RC23A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RC23B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RC23C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RC24A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RC24B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RC24C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RC25A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RC25B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RC25C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RC30A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RC30B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RC30C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RC31A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RC31B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RC31C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RC32A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RC32B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RC32C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RC33A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RC33B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RC33C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RC34A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RC34B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RC34C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RC35A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RC35B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RC35C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RC40A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RC40B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RC40C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RC41A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RC41B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RC41C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RC42A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RC42B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RC42C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RC43A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RC43B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RC43C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RC44A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RC44B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RC44C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RC45A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RC45B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RC45C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RC50A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RC50B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RC50C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RC51A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RC51B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RC51C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RC52A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RC52B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RC52C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RC53A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RC53B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RC53C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RC54A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RC54B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RC54C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RC55A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RC55B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RC55C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RC60A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RC60B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RC60C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RC61A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RC61B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RC61C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RC62A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RC62B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RC62C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RC63A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RC63B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RC63C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RC64A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RC64B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RC64C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RC65A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RC65B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RC65C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RC73A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RC73B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RC73C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RC74A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RC74B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RC74C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RC75A": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RC75B": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RC75C": {
+            "zone": "Rack",
+            "aisle": "RC",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RD20A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RD20B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RD20C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RD21A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RD21B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RD21C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RD22A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RD22B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RD22C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RD23A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RD23B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RD23C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RD24A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RD24B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RD24C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RD25A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RD25B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RD25C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RD30A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RD30B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RD30C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RD31A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RD31B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RD31C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RD32A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RD32B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RD32C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RD33A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RD33B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RD33C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RD34A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RD34B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RD34C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RD35A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RD35B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RD35C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RD40A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RD40B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RD40C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RD41A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RD41B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RD41C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RD42A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RD42B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RD42C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RD43A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RD43B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RD43C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RD44A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RD44B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RD44C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RD45A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RD45B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RD45C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RD50A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RD50B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RD50C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RD51A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RD51B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RD51C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RD52A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RD52B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RD52C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RD53A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RD53B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RD53C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RD54A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RD54B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RD54C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RD55A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RD55B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RD55C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RD60A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RD60B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RD60C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RD61A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RD61B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RD61C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RD62A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RD62B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RD62C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RD63A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RD63B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RD63C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RD64A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RD64B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RD64C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RD65A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RD65B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RD65C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RD73A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RD73B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RD73C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RD74A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RD74B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RD74C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RD75A": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RD75B": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RD75C": {
+            "zone": "Rack",
+            "aisle": "RD",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RE20A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RE20B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RE20C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RE21A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RE21B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RE21C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RE22A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RE22B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RE22C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RE23A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RE23B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RE23C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RE24A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RE24B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RE24C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RE25A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RE25B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RE25C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RE30A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RE30B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RE30C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RE31A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RE31B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RE31C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RE32A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RE32B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RE32C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RE33A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RE33B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RE33C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RE34A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RE34B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RE34C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RE35A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RE35B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RE35C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RE40A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RE40B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RE40C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RE41A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RE41B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RE41C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RE42A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RE42B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RE42C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RE43A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RE43B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RE43C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RE44A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RE44B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RE44C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RE45A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RE45B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RE45C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RE50A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RE50B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RE50C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RE51A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RE51B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RE51C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RE52A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RE52B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RE52C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RE53A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RE53B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RE53C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RE54A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RE54B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RE54C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RE55A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RE55B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RE55C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RE60A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RE60B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RE60C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 0,
+            "spot": "Hot"
+        },
+        "RE61A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RE61B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RE61C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 1,
+            "spot": "Hot"
+        },
+        "RE62A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RE62B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RE62C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 2,
+            "spot": "Warm"
+        },
+        "RE63A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RE63B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RE63C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RE64A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RE64B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RE64C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RE65A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RE65B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RE65C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RE73A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RE73B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RE73C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 3,
+            "spot": "Cold"
+        },
+        "RE74A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RE74B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RE74C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 4,
+            "spot": "Cold"
+        },
+        "RE75A": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RE75B": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 5,
+            "spot": "Cold"
+        },
+        "RE75C": {
+            "zone": "Rack",
+            "aisle": "RE",
+            "level": 5,
+            "spot": "Cold"
+        }
+    }
+}

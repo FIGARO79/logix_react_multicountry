@@ -4,13 +4,19 @@ import { Link } from 'react-router-dom';
 const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    const [country, setCountry] = useState('CL');
+    const [country, setCountry] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
     const handleLogin = async (e) => {
         e.preventDefault();
         setError('');
+
+        if (!country) {
+            setError("Por favor, seleccione un país");
+            return;
+        }
+
         setLoading(true);
 
         try {
@@ -68,6 +74,7 @@ const Login = () => {
                             onChange={(e) => setCountry(e.target.value)}
                             className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:border-[#0070d2] focus:ring focus:ring-[#0070d2] focus:ring-opacity-50 p-2 border bg-white"
                         >
+                            <option value="" disabled>Seleccione país...</option>
                             <option value="CL">Chile (CL)</option>
                             <option value="AR">Argentina (AR)</option>
                             <option value="BR">Brasil (BR)</option>

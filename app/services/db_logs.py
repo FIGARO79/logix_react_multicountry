@@ -188,8 +188,8 @@ async def get_archived_versions_db_async(db: AsyncSession, country_code: str) ->
         print(f"DB Error (get_archived_versions_db_async): {e}")
         return []
 
-async def load_archived_log_data_db_async(db: AsyncSession, version_date: str, country_code: str) -> List[Dict[str, Any]]:
-    """Carga los logs de una versión archivada específica."""
+async def load_archived_log_data_db_async(db: AsyncSession, country_code: str, version_date: str) -> List[Dict[str, Any]]:
+    """Carga los logs de una versión archivada específica (Parámetros estandarizados)."""
     try:
         stmt = select(Log).where(Log.archived_at == version_date, Log.country_code == country_code).order_by(Log.id.desc())
         result = await db.execute(stmt)

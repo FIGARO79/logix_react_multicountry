@@ -1,0 +1,8 @@
+{
+    "turnover": {
+        "Y": {"range": "0-30 days", "spot": "Hot"},
+        "K": {"range": "31-90 days", "spot": "Warm"},
+        "L": {"range": "91+ days", "spot": "Cold"}
+    },
+    "storage": {}
+}

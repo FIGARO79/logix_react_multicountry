@@ -9,7 +9,7 @@ from app.core.config import PROJECT_ROOT
 
 GRN_EXCEL_PATH = os.path.join(PROJECT_ROOT, "GRN.xlsx")
 
-async def seed_grn_from_excel(db: AsyncSession, country_code: str = "MX"):
+async def seed_grn_from_excel(db: AsyncSession, country_code: str = "CL"):
     """
     Lee el archivo GRN.xlsx y precarga los datos en la tabla grn_master para un país específico.
     Evita duplicados basados en import_reference, waybill y country_code.

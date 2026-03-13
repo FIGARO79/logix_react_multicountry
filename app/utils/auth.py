@@ -18,7 +18,7 @@ async def get_user_by_id(db: AsyncSession, user_id: int) -> Optional[Dict[str, A
     user = result.scalar_one_or_none()
     return user.to_dict() if user else None
 
-async def create_user(db: AsyncSession, username: str, password: str, country_code: str = "MX", is_approved: int = 0, permissions: str = "") -> bool:
+async def create_user(db: AsyncSession, username: str, password: str, country_code: str = "CL", is_approved: int = 0, permissions: str = "") -> bool:
     """
     Crea un nuevo usuario en la base de datos.
     Devuelve True si se creó con éxito, False si el usuario ya existe.
@@ -83,7 +83,7 @@ async def get_all_users(db: AsyncSession) -> List[Dict[str, Any]]:
             "username": u.username,
             "is_approved": u.is_approved,
             "permissions": u.permissions or "",
-            "country_code": u.country_code or "MX"
+            "country_code": u.country_code or "CL"
         })
     return user_list
 

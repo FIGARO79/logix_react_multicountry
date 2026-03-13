@@ -31,6 +31,8 @@ const ManageCycleCountDifferences = lazy(() => import('./pages/ManageCycleCountD
 const WaybillGRN = lazy(() => import('./pages/WaybillGRN'));
 const Shipments = lazy(() => import('./pages/Shipments'));
 const ConsolidatedPackingList = lazy(() => import('./pages/ConsolidatedPackingList'));
+const DashboardInventario = lazy(() => import('./pages/DashboardInventario'));
+const SlottingConfig = lazy(() => import('./pages/SlottingConfig'));
 const ErrorPage = lazy(() => import('./pages/Error'));
 
 // Componente de carga
@@ -101,6 +103,11 @@ function App() {
                         </ProtectedRoute>
                     }>
                         <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/dashboard_inventario" element={
+                            <ProtectedRoute requiredPermission="inventory">
+                                <DashboardInventario />
+                            </ProtectedRoute>
+                        } />
                         <Route path="/inbound" element={
                             <ProtectedRoute requiredPermission="inbound">
                                 <Inbound />
@@ -194,6 +201,7 @@ function App() {
                         <Route path="/admin/login" element={<AdminLogin />} />
                         <Route path="/admin/users" element={<AdminUsers />} />
                         <Route path="/admin/inventory" element={<AdminInventory />} />
+                        <Route path="/admin/slotting" element={<SlottingConfig />} />
                         <Route path="/shipments" element={
                             <ProtectedRoute requiredPermission="picking">
                                 <Shipments />

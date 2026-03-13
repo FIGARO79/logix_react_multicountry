@@ -28,7 +28,7 @@ async_engine = create_async_engine(ASYNC_DB_URL)
 
 @router.get('/get_item_for_counting/{item_code}')
 async def get_item_for_counting(request: Request, item_code: str, username: str = Depends(api_login_required), db: AsyncSession = Depends(get_db)):
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     current_stage = 1 # Default
     
     # Obtener sesión activa ORM para el país
@@ -70,10 +70,133 @@ async def get_item_for_counting(request: Request, item_code: str, username: str 
             raise HTTPException(status_code=404, detail="Artículo no encontrado en el maestro de items.")
 
 
+@router.get('/counts/dashboard_stats')
+async def get_dashboard_stats(request: Request, username: str = Depends(api_login_required), db: AsyncSession = Depends(get_db)):
+    """
+    Endpoint avanzado que calcula todos los KPIs industriales para el Dashboard (Multicountry).
+    """
+    country = get_current_country(request) or "CL"
+    from app.services.csv_handler import master_qty_map
+    import math
+    
+    try:
+        # 1. Obtener todos los registros de grabaciones del país
+        result = await db.execute(select(CycleCountRecording).where(CycleCountRecording.country_code == country))
+        recordings = result.scalars().all()
+        
+        if not recordings:
+            return JSONResponse(content={"empty": True})
+
+        # 2. Asegurar caché cargada para el país
+        await csv_handler.reload_cache_if_needed(country)
+        
+        # --- Cálculos de KPIs ---
+        
+        # A. Exactitud (ERI) Global y por ABC
+        eri_data = {"A": {"total": 0, "exact": 0}, "B": {"total": 0, "exact": 0}, "C": {"total": 0, "exact": 0}, "Global": {"total": 0, "exact": 0}}
+        
+        # B. Ajustes Brutos vs Netos
+        adj_units = {"net": 0, "gross": 0}
+        adj_value = {"net": 0.0, "gross": 0.0}
+        
+        # C. Mapas para Pareto y Productividad
+        user_prod = {}
+        item_discrepancies = [] # Para Pareto financiero
+        zone_errors = {} # Densidad por ubicación (pasillo)
+
+        for rec in recordings:
+            # Datos base
+            abc = rec.abc_code or "C"
+            diff = rec.difference or 0
+            abs_diff = abs(diff)
+            
+            # Obtener costo del maestro (simulado o desde BD si existe columna)
+            # En multicountry, intentamos obtener de MasterItem
+            from app.models.sql_models import MasterItem
+            stmt_item = select(MasterItem.cost_per_unit).where(MasterItem.item_code == rec.item_code, MasterItem.country_code == country)
+            res_item = await db.execute(stmt_item)
+            cost = float(res_item.scalar() or 0.0)
+            
+            val_diff = diff * cost
+            abs_val_diff = abs_diff * cost
+
+            # Actualizar ERI
+            eri_data["Global"]["total"] += 1
+            if diff == 0: eri_data["Global"]["exact"] += 1
+            
+            if abc in eri_data:
+                eri_data[abc]["total"] += 1
+                if diff == 0: eri_data[abc]["exact"] += 1
+
+            # Actualizar Ajustes
+            adj_units["net"] += diff
+            adj_units["gross"] += abs_diff
+            adj_value["net"] += val_diff
+            adj_value["gross"] += abs_val_diff
+
+            # Productividad Usuario
+            u = rec.username or "Sistema"
+            if u not in user_prod: user_prod[u] = {"items": 0, "errors": 0}
+            user_prod[u]["items"] += 1
+            if diff != 0: user_prod[u]["errors"] += 1
+
+            # Pareto Financiero (Solo si hay diferencia)
+            if abs_val_diff > 0:
+                item_discrepancies.append({
+                    "code": rec.item_code,
+                    "desc": rec.item_description,
+                    "diff": diff,
+                    "val_diff": val_diff,
+                    "abs_val_diff": abs_val_diff
+                })
+
+            # Densidad de Error por Pasillo (Ubicación)
+            loc = str(rec.bin_location or "N/A").strip()
+            zone = loc[:2] if len(loc) > 2 else "N/A"
+            if zone not in zone_errors: zone_errors[zone] = {"total": 0, "errors": 0}
+            zone_errors[zone]["total"] += 1
+            if diff != 0: zone_errors[zone]["errors"] += 1
+
+        # --- Formateo Final de Resultados ---
+        eri_final = {}
+        for k, v in eri_data.items():
+            eri_final[k] = round((v["exact"] / v["total"] * 100), 1) if v["total"] > 0 else 0
+
+        top_losses = sorted(item_discrepancies, key=lambda x: x["abs_val_diff"], reverse=True)[:10]
+
+        productivity = []
+        for u, stats in user_prod.items():
+            err_rate = round((stats["errors"] / stats["items"] * 100), 1) if stats["items"] > 0 else 0
+            productivity.append({"user": u, "items": stats["items"], "error_rate": err_rate})
+
+        zones = []
+        for z, stats in zone_errors.items():
+            rate = round((stats["errors"] / stats["total"] * 100), 1) if stats["total"] > 0 else 0
+            zones.append({"zone": z, "error_rate": rate, "total": stats["total"]})
+        zones = sorted(zones, key=lambda x: x["error_rate"], reverse=True)[:5] 
+
+        return JSONResponse(content={
+            "eri": eri_final,
+            "adjustments": {
+                "units": adj_units,
+                "value": adj_value
+            },
+            "top_losses": top_losses,
+            "productivity": productivity,
+            "zones": zones,
+            "total_items": eri_data["Global"]["total"]
+        })
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error calculando estadísticas: {e}")
+
+
 @router.get('/counts/all')
 async def get_all_counts(request: Request, username: str = Depends(api_login_required), db: AsyncSession = Depends(get_db)):
     """Obtiene todos los registros de conteo con información enriquecida para el país."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     try:
         all_counts = await db_counts.load_all_counts_db_async(db, country_code=country)
         
@@ -132,7 +255,7 @@ async def add_count(data: Count, username: str = Depends(api_login_required)):
 @router.post('/save_count')
 async def save_count(request: Request, data: StockCount, username: str = Depends(api_login_required), db: AsyncSession = Depends(get_db)):
     """Guarda un conteo de stock con sesión para el país."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     # Lógica existente...
     item_details = await csv_handler.get_item_details_from_master_csv(data.item_code, country_code=country)
     description = item_details.get('Item_Description', '') if item_details else data.description or ''
@@ -157,7 +280,7 @@ async def save_count(request: Request, data: StockCount, username: str = Depends
 @router.get('/counts/differences')
 async def get_count_differences(request: Request, username: str = Depends(api_login_required), db: AsyncSession = Depends(get_db)):
     """Obtiene diferencias para el país."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     try:
         all_counts = await db_counts.load_all_counts_db_async(db, country_code=country)
         
@@ -218,7 +341,7 @@ async def get_count_differences(request: Request, username: str = Depends(api_lo
 @router.put("/counts/{count_id}")
 async def update_stock_count(request: Request, count_id: int, data: dict, username: str = Depends(api_login_required), db: AsyncSession = Depends(get_db)):
     """Actualiza un conteo filtrado por país."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     try:
         # Obtener el registro actual validando país
         result = await db.execute(
@@ -249,7 +372,7 @@ async def update_stock_count(request: Request, count_id: int, data: dict, userna
 @router.delete("/counts/{count_id}", status_code=status.HTTP_200_OK)
 async def delete_stock_count(request: Request, count_id: int, username: str = Depends(api_login_required), db: AsyncSession = Depends(get_db)):
     """Elimina un conteo de stock validando país."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     success = await db_counts.delete_stock_count(db, count_id, country_code=country)
     if success:
         return JSONResponse({'message': f'Conteo {count_id} eliminado con éxito.'})
@@ -259,7 +382,7 @@ async def delete_stock_count(request: Request, count_id: int, username: str = De
 @router.get('/export_counts')
 async def export_counts(request: Request, username: str = Depends(api_login_required), db: AsyncSession = Depends(get_db)):
     """Exporta conteos del país a Excel."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     all_counts = await db_counts.load_all_counts_db_async(db, country_code=country)
     
     # Obtener detalles de sesiones
@@ -321,7 +444,7 @@ async def export_counts(request: Request, username: str = Depends(api_login_requ
 @router.get('/counts/stats')
 async def get_count_stats(request: Request, username: str = Depends(api_login_required), db: AsyncSession = Depends(get_db)):
     """Estadísticas del país."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     try:
         # Asegurar cache
         if country not in master_qty_map:
@@ -389,7 +512,7 @@ async def get_count_stats(request: Request, username: str = Depends(api_login_re
 @router.get('/counts/debug/master_qty_map')
 async def debug_master_qty_map(request: Request, username: str = Depends(api_login_required)):
     """Debug map del país."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     country_map = master_qty_map.get(country, {})
     total_items = len(country_map)
     items_with_stock = sum(1 for qty in country_map.values() if qty is not None and qty > 0)
@@ -407,7 +530,7 @@ async def debug_master_qty_map(request: Request, username: str = Depends(api_log
 @router.get('/debug/last_counts')
 async def debug_last_counts(request: Request, limit: int = 20, username: str = Depends(api_login_required), db: AsyncSession = Depends(get_db)):
     """Diágnostico por país."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     all_counts = await db_counts.load_all_counts_db_async(db, country_code=country)
     return JSONResponse(content=all_counts[:int(limit)])
 
@@ -415,7 +538,7 @@ async def debug_last_counts(request: Request, limit: int = 20, username: str = D
 @router.get('/counts/recordings')
 async def get_cycle_count_recordings(request: Request, username: str = Depends(api_login_required), db: AsyncSession = Depends(get_db)):
     """Historial del país."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     from app.models.sql_models import MasterItem
     
     try:
@@ -504,7 +627,7 @@ async def get_cycle_count_recordings(request: Request, username: str = Depends(a
 @router.get('/counts/export_recordings')
 async def export_cycle_count_recordings(request: Request, username: str = Depends(api_login_required), db: AsyncSession = Depends(get_db)):
     """Exporta historial por país."""
-    country = get_current_country(request) or "MX"
+    country = get_current_country(request) or "CL"
     try:
         result = await db.execute(
             select(CycleCountRecording).where(CycleCountRecording.country_code == country).order_by(CycleCountRecording.executed_date.desc())
