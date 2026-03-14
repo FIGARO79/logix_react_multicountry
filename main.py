@@ -68,7 +68,7 @@ app.add_middleware(
     SessionMiddleware, 
     secret_key=SECRET_KEY, 
     session_cookie="logix_session",
-    max_age=None,
+    max_age=3600, # La sesión caduca en 1 hora (3600 segundos)
     same_site="lax",
     https_only=False
 )
