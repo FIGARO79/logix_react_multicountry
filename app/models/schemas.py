@@ -52,6 +52,7 @@ class PickingAudit(BaseModel):
     order_number: str
     despatch_number: str
     customer_name: str
+    customer_code: Optional[str] = None
     status: str
     items: List[PickingAuditItem]
     packages: Optional[int] = 0  # Cantidad de bultos/paquetes

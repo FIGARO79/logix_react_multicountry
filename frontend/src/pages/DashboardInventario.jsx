@@ -15,7 +15,7 @@ const DashboardInventario = () => {
     const fetchStats = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/counts/dashboard_stats');
+            const res = await fetch('/api/counts/dashboard_stats', { credentials: 'include' });
             if (!res.ok) throw new Error("Error cargando estadísticas");
             const data = await res.json();
             setStats(data);

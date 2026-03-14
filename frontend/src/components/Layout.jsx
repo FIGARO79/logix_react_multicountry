@@ -90,7 +90,6 @@ const Layout = () => {
                     <MenuItem to="/inbound" icon={<DownloadIcon />} label="Inbound" onClick={toggleMenu} />
                     <MenuItem to="/reconciliation" icon={<EyeIcon />} label="Ver conciliación" onClick={toggleMenu} />
                     <MenuItem to="/view_logs" icon={<DocumentIcon />} label="Ver Logs" onClick={toggleMenu} />
-                    <MenuItem to="/waybill-grn" icon={<DocumentIcon />} label="Waybill-GRN" onClick={toggleMenu} />
 
                     {/* Separator */}
                     <div className="h-px bg-white/10 my-1 mx-4"></div>

@@ -43,6 +43,7 @@ const PickingAudit = () => {
 
     // Audit Section
     const [auditActive, setAuditActive] = useState(false);
+    const [customerCode, setCustomerCode] = useState('');
     const [customerName, setCustomerName] = useState('');
     const [orderItems, setOrderItems] = useState([]);
 
@@ -50,11 +51,17 @@ const PickingAudit = () => {
     const [itemCodeInput, setItemCodeInput] = useState('');
     const [scannerOpen, setScannerOpen] = useState(false);
 
+    // Quantity Modal
+    const [showQtyModal, setShowQtyModal] = useState(false);
+    const [scannedItem, setScannedItem] = useState(null);
+    const [tempQty, setTempQty] = useState(1);
+    const qtyInputRef = useRef(null);
+
     // Modals & Finalize
     const [showConfirmModal, setShowConfirmModal] = useState(false);
-    const [showPackagesModal, setShowPackagesModal] = useState(false);
     const [showAssignmentModal, setShowAssignmentModal] = useState(false);
-    const [packagesCount, setPackagesCount] = useState('');
+    const [packagesCount, setPackagesCount] = useState('1');
+    const [activePackage, setActivePackage] = useState(1);
     const [packageAssignments, setPackageAssignments] = useState({}); // { item_code: { pkg_index: qty } }
 
     useEffect(() => {
@@ -62,32 +69,6 @@ const PickingAudit = () => {
         loadTrackingData();
     }, [setTitle]);
 
-    // Initialize assignments when entering assignment modal
-    const prepareAssignment = () => {
-        const count = parseInt(packagesCount);
-        if (!count || count <= 0) {
-            submitAudit(); // No packages, just submit
-            return;
-        }
-
-        // Init structure: { "ITEM01": { 1: 0, 2: 0 }, ... }
-        const initialAssignments = {};
-        orderItems.forEach(item => {
-            const row = {};
-            for (let i = 1; i <= count; i++) {
-                row[i] = 0;
-            }
-            // Auto-assign to box 1 if only 1 box? Optional, let's keep it 0 for explicit user input
-            // OR if only 1 box, pre-fill it?
-            if (count === 1) {
-                row[1] = item.qty_scan;
-            }
-            initialAssignments[item.code] = row;
-        });
-        setPackageAssignments(initialAssignments);
-        setShowPackagesModal(false);
-        setShowAssignmentModal(true);
-    };
 
     // -- API Calls --
 
@@ -120,6 +101,7 @@ const PickingAudit = () => {
             if (res.ok) {
                 const data = await res.json();
                 if (data && data.length > 0) {
+                    setCustomerCode(data[0]['Customer Code'] || '');
                     setCustomerName(data[0]['Customer Name']);
                     // Map CSV columns to internal state
                     const items = data.map(row => ({
@@ -131,6 +113,17 @@ const PickingAudit = () => {
                         difference: 0
                     }));
                     setOrderItems(items);
+
+                    // Initialize assignments for dynamic allocation using unique key (code:order_line)
+                    const initialAssignments = {};
+                    items.forEach(item => {
+                        const itemKey = `${item.code}:${item.order_line || ''}`;
+                        initialAssignments[itemKey] = { 1: 0 };
+                    });
+                    setPackageAssignments(initialAssignments);
+                    setPackagesCount('1');
+                    setActivePackage(1);
+
                     setAuditActive(true);
                     toast.success("Pedido cargado");
                 } else {
@@ -151,22 +144,40 @@ const PickingAudit = () => {
         setOrderItems([]);
         setOrderNumber('');
         setDespatchNumber('');
+        setCustomerCode('');
         setCustomerName('');
         setShowAssignmentModal(false);
         setPackageAssignments({});
-        setPackagesCount('');
+        setPackagesCount('1');
+        setActivePackage(1);
         loadTrackingData();
     };
 
-    const handleAssignmentChange = (itemCode, pkgNum, value) => {
+    const handleAssignmentChange = (itemKey, pkgNum, value) => {
         const val = parseInt(value) || 0;
-        setPackageAssignments(prev => ({
-            ...prev,
-            [itemCode]: {
-                ...prev[itemCode],
-                [pkgNum]: val
+        setPackageAssignments(prev => {
+            const next = {
+                ...prev,
+                [itemKey]: {
+                    ...prev[itemKey],
+                    [pkgNum]: val
+                }
+            };
+            
+            // Sincronizar qty_scan en orderItems
+            const [code, line] = itemKey.split(':');
+            const newItems = [...orderItems];
+            const itemIdx = newItems.findIndex(i => i.code === code && (i.order_line || '') === line);
+            
+            if (itemIdx > -1) {
+                const totalAssigned = Object.values(next[itemKey]).reduce((a, b) => a + (parseInt(b) || 0), 0);
+                newItems[itemIdx].qty_scan = totalAssigned;
+                newItems[itemIdx].difference = totalAssigned - newItems[itemIdx].qty_req;
+                setOrderItems(newItems);
             }
-        }));
+            
+            return next;
+        });
     };
 
     // -- Audit Logic --
@@ -185,46 +196,99 @@ const PickingAudit = () => {
         }
 
         if (itemIndex > -1) {
-            const newItems = [...orderItems];
-            const item = newItems[itemIndex];
-
-            // Increment scan
-            item.qty_scan += 1;
-            item.difference = item.qty_scan - item.qty_req;
-
-            setOrderItems(newItems);
+            const item = orderItems[itemIndex];
+            setScannedItem({ ...item, index: itemIndex });
+            setTempQty(1); // Default to 1
+            setShowQtyModal(true);
             setItemCodeInput('');
-
-            // Feedback
-            if (item.qty_scan <= item.qty_req) {
-                playSuccess();
-                toast.success(`Leído: ${item.code}`);
-            } else {
-                playError(); // Over-scan warning
-                toast.warning(`Exceso: ${item.code}`);
-            }
+            playSuccess();
         } else {
             playError();
             toast.error(`Item NO pertenece al pedido: ${cleanCode}`);
+            setItemCodeInput('');
+        }
+    };
+
+    const confirmQuantity = () => {
+        if (!scannedItem) return;
+
+        let qtyToAdd = parseInt(tempQty) || 0;
+        const totalAdding = qtyToAdd;
+        if (qtyToAdd <= 0) {
+            setShowQtyModal(false);
+            return;
+        }
+
+        const newItems = [...orderItems];
+        const packageUpdates = {};
+
+        for (let i = 0; i < newItems.length && qtyToAdd > 0; i++) {
+            if (newItems[i].code === scannedItem.code && newItems[i].qty_scan < newItems[i].qty_req) {
+                const needed = newItems[i].qty_req - newItems[i].qty_scan;
+                const toAdd = Math.min(needed, qtyToAdd);
+
+                newItems[i].qty_scan += toAdd;
+                newItems[i].difference = newItems[i].qty_scan - newItems[i].qty_req;
+                qtyToAdd -= toAdd;
+
+                const itemKey = `${newItems[i].code}:${newItems[i].order_line || ''}`;
+                packageUpdates[itemKey] = (packageUpdates[itemKey] || 0) + toAdd;
+            }
+        }
+
+        if (qtyToAdd > 0) {
+            const targetIndex = scannedItem.index;
+            newItems[targetIndex].qty_scan += qtyToAdd;
+            newItems[targetIndex].difference = newItems[targetIndex].qty_scan - newItems[targetIndex].qty_req;
+
+            const itemKey = `${newItems[targetIndex].code}:${newItems[targetIndex].order_line || ''}`;
+            packageUpdates[itemKey] = (packageUpdates[itemKey] || 0) + qtyToAdd;
+        }
+
+        setOrderItems(newItems);
+
+        setPackageAssignments(prev => {
+            const next = { ...prev };
+            Object.entries(packageUpdates).forEach(([itemKey, qtyAdded]) => {
+                const currentItemAssignments = next[itemKey] || {};
+                const currentPkgQty = currentItemAssignments[activePackage] || 0;
+                next[itemKey] = {
+                    ...currentItemAssignments,
+                    [activePackage]: currentPkgQty + qtyAdded
+                };
+            });
+            return next;
+        });
+
+        setShowQtyModal(false);
+        setScannedItem(null);
+
+        const anyOver = newItems.filter(i => i.code === scannedItem.code).some(i => i.qty_scan > i.qty_req);
+        if (!anyOver) {
+            toast.success(`Leído: ${scannedItem.code} (+${totalAdding})`);
+        } else {
+            playError();
+            toast.warning(`Exceso: ${scannedItem.code} (+${totalAdding})`);
         }
     };
 
     const handleFinalize = () => {
-        // Check differences
         const hasDifferences = orderItems.some(i => i.qty_scan !== i.qty_req);
         if (hasDifferences) {
             setShowConfirmModal(true);
         } else {
-            setShowPackagesModal(true);
+            setShowAssignmentModal(true);
         }
     };
 
     const submitAudit = async (statusOverride) => {
+        const hasDifferences = orderItems.some(i => i.qty_scan !== i.qty_req);
         const payload = {
             order_number: orderNumber,
             despatch_number: despatchNumber,
+            customer_code: customerCode,
             customer_name: customerName,
-            status: statusOverride || (orderItems.some(i => i.qty_scan !== i.qty_req) ? 'Con Diferencia' : 'Completo'),
+            status: statusOverride || (hasDifferences ? 'Con Diferencia' : 'Completo'),
             items: orderItems.map(i => ({
                 code: i.code,
                 description: i.description,
@@ -248,9 +312,8 @@ const PickingAudit = () => {
                 toast.success("Auditoría Finalizada Correctamente");
                 handleReset();
                 setShowConfirmModal(false);
-                setShowPackagesModal(false);
                 setShowAssignmentModal(false);
-                setPackagesCount('');
+                setPackagesCount('1');
             } else {
                 const err = await res.json();
                 toast.error(err.detail || "Error al guardar");
@@ -259,12 +322,6 @@ const PickingAudit = () => {
             toast.error("Error de conexión");
         }
     };
-
-    // -- Scanner Effect --
-    // -- Scanner Effect --
-    // -- Scanner Logic --
-    // The previous manual useEffect is removed in favor of ScannerModal
-
 
     // -- Render --
 
@@ -277,9 +334,76 @@ const PickingAudit = () => {
                         <div>
                             <h1 className="text-2xl font-bold text-gray-800">Auditoría en Curso</h1>
                             <p className="text-gray-600">Orden: <span className="font-mono font-bold text-black">{orderNumber} / {despatchNumber}</span></p>
-                            <p className="text-gray-600">Cliente: <span className="font-bold text-black">{customerName}</span></p>
+                            <p className="text-gray-600">Cliente: <span className="font-bold text-black">{customerCode} - {customerName}</span></p>
                         </div>
                         <button onClick={handleReset} className="btn-sap btn-secondary text-xs">Cancelar / Salir</button>
+                    </div>
+
+                    {/* Active Package Selector Compact */}
+                    <div className="mb-4 p-2 px-3 bg-slate-50 rounded-lg border border-slate-200 flex items-center gap-3">
+                        <span className="text-[10px] uppercase font-bold text-slate-500 whitespace-nowrap">Bulto Activo:</span>
+                        <div className="flex gap-1.5 flex-wrap">
+                            {Array.from({ length: parseInt(packagesCount) || 1 }).map((_, i) => (
+                                <button
+                                    key={i + 1}
+                                    onClick={() => setActivePackage(i + 1)}
+                                    className={`w-8 h-8 rounded-full font-bold text-xs transition-all ${activePackage === i + 1
+                                        ? 'bg-[#285f94] text-white shadow-sm'
+                                        : 'bg-white text-slate-600 border border-slate-300 hover:border-[#285f94]'}`}
+                                >
+                                    {i + 1}
+                                </button>
+                            ))}
+                            
+                            <div className="flex gap-1">
+                                {(parseInt(packagesCount) || 1) > 1 && (
+                                    <button
+                                        onClick={() => {
+                                            const currentTotal = parseInt(packagesCount);
+                                            // Verificar si el último bulto tiene algo asignado
+                                            let hasAssignments = false;
+                                            Object.values(packageAssignments).forEach(itemPkgs => {
+                                                if (itemPkgs[currentTotal] > 0) hasAssignments = true;
+                                            });
+
+                                            if (hasAssignments) {
+                                                toast.warning("El último bulto no está vacío");
+                                                return;
+                                            }
+
+                                            const newCount = currentTotal - 1;
+                                            setPackagesCount(newCount.toString());
+                                            if (activePackage > newCount) setActivePackage(newCount);
+                                        }}
+                                        className="w-8 h-8 rounded-full border border-red-200 bg-red-50 text-red-500 font-bold text-xs hover:bg-red-500 hover:text-white flex items-center justify-center transition-all"
+                                        title="Eliminar Último Bulto"
+                                    >
+                                        −
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => {
+                                        const newCount = (parseInt(packagesCount) || 1) + 1;
+                                        setPackagesCount(newCount.toString());
+                                        setActivePackage(newCount);
+                                        setPackageAssignments(prev => {
+                                            const updated = { ...prev };
+                                            Object.keys(updated).forEach(key => {
+                                                updated[key] = { ...updated[key], [newCount]: 0 };
+                                            });
+                                            return updated;
+                                        });
+                                    }}
+                                    className="w-8 h-8 rounded-full border border-[#285f94] bg-white text-[#285f94] font-bold text-xs hover:bg-[#285f94] hover:text-white flex items-center justify-center transition-all"
+                                    title="Añadir Bulto"
+                                >
+                                    +
+                                </button>
+                            </div>
+                        </div>
+                        <div className="hidden sm:block flex-grow text-[11px] text-slate-500 italic">
+                            Asignando al <strong>Bulto {activePackage}</strong>.
+                        </div>
                     </div>
 
                     {/* Scan Input */}
@@ -318,6 +442,7 @@ const PickingAudit = () => {
                         <table className="w-full text-left sap-table">
                             <thead>
                                 <tr>
+                                    <th className="text-center w-12">Línea</th>
                                     <th>Item</th>
                                     <th>Descripción</th>
                                     <th className="text-center w-16">Req</th>
@@ -333,7 +458,18 @@ const PickingAudit = () => {
 
                                     return (
                                         <tr key={idx} className={isComplete ? 'bg-green-50' : isOver ? 'bg-red-50' : ''}>
-                                            <td className="font-medium">{item.code}</td>
+                                            <td className="text-center font-mono text-xs">{item.order_line}</td>
+                                            <td className="font-medium">
+                                                {item.code}
+                                                <div className="text-[10px] text-slate-500 flex gap-1 flex-wrap mt-1">
+                                                    {Object.entries(packageAssignments[`${item.code}:${item.order_line || ''}`] || {})
+                                                        .filter(([_, qty]) => qty > 0)
+                                                        .map(([pkg, qty]) => (
+                                                            <span key={pkg} className="bg-slate-100 px-1 rounded border">B{pkg}: {qty}</span>
+                                                        ))
+                                                    }
+                                                </div>
+                                            </td>
                                             <td className="text-sm truncate max-w-[200px]">{item.description}</td>
                                             <td className="text-center">{item.qty_req}</td>
                                             <td className="text-center font-bold">{item.qty_scan}</td>
@@ -358,12 +494,27 @@ const PickingAudit = () => {
                                 <div key={idx} className={`p-4 rounded-lg shadow-sm border ${isComplete ? 'bg-green-50 border-green-200' : isOver ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200'}`}>
                                     {/* Header */}
                                     <div className="flex justify-between items-start mb-2">
-                                        <span className="font-bold text-lg text-gray-800">{item.code}</span>
+                                        <div className="flex flex-col">
+                                            <span className="font-bold text-lg text-gray-800">{item.code}</span>
+                                            <span className="text-[10px] font-mono text-gray-500">LÍNEA {item.order_line}</span>
+                                        </div>
                                         <span className={`px-2 py-0.5 text-xs font-bold rounded ${diff === 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                                             {diff > 0 ? `+${diff}` : diff !== 0 ? diff : 'OK'}
                                         </span>
                                     </div>
-                                    <p className="text-xs text-gray-500 mb-3 truncate">{item.description}</p>
+                                    <p className="text-xs text-gray-500 mb-2 truncate">{item.description}</p>
+
+                                    {/* Package Breakdown Mobile */}
+                                    <div className="flex flex-wrap gap-1 mb-3">
+                                        {Object.entries(packageAssignments[`${item.code}:${item.order_line || ''}`] || {})
+                                            .filter(([_, qty]) => qty > 0)
+                                            .map(([pkg, qty]) => (
+                                                <span key={pkg} className="text-[10px] bg-white border border-slate-200 px-1.5 py-0.5 rounded text-slate-600 shadow-sm">
+                                                    B{pkg}: <span className="font-bold text-slate-800">{qty}</span>
+                                                </span>
+                                            ))
+                                        }
+                                    </div>
 
                                     {/* Grid */}
                                     <div className="grid grid-cols-2 gap-4 text-sm bg-white/50 p-2 rounded">
@@ -373,7 +524,7 @@ const PickingAudit = () => {
                                         </div>
                                         <div className="flex flex-col items-end">
                                             <span className="text-gray-500 text-[10px] uppercase tracking-wider">Escaneado</span>
-                                            <span className={`font-bold text-xl ${diff !== 0 ? 'text-blue-600' : 'text-green-600'}`}>{item.qty_scan}</span>
+                                            <span className={`font-bold text-xl ${diff !== 0 ? 'text-[#285f94]' : 'text-green-600'}`}>{item.qty_scan}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -399,6 +550,60 @@ const PickingAudit = () => {
                     />
                 )}
 
+                {/* Quantity Modal */}
+                {showQtyModal && scannedItem && (
+                    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+                        <div className="bg-white p-6 rounded-lg shadow-2xl max-w-sm w-full border-t-4 border-[#285f94]">
+                            <h3 className="text-xl font-bold text-gray-800 mb-1">{scannedItem.code}</h3>
+                            <p className="text-sm text-gray-500 mb-4 truncate">{scannedItem.description}</p>
+
+                            <div className="bg-blue-50 p-3 rounded mb-4 flex justify-between text-sm">
+                                <div>
+                                    <span className="block text-gray-500 text-[10px] uppercase">Línea</span>
+                                    <span className="font-bold text-lg">{scannedItem.order_line}</span>
+                                </div>
+                                <div>
+                                    <span className="block text-gray-500 text-[10px] uppercase">Requerido</span>
+                                    <span className="font-bold text-lg">{scannedItem.qty_req}</span>
+                                </div>
+                                <div className="text-right">
+                                    <span className="block text-gray-500 text-[10px] uppercase">Auditado</span>
+                                    <span className="font-bold text-lg text-[#285f94]">{scannedItem.qty_scan}</span>
+                                </div>
+                            </div>
+
+                            <label className="form-label text-center block mb-2 font-bold">CANTIDAD A SUMAR</label>
+                            <input
+                                type="number"
+                                value={tempQty}
+                                onChange={e => setTempQty(e.target.value)}
+                                className="text-center text-3xl font-bold w-full p-4 border-2 border-[#285f94] rounded mb-6"
+                                autoFocus
+                                onFocus={(e) => e.target.select()}
+                                onKeyDown={e => {
+                                    if (e.key === 'Enter') confirmQuantity();
+                                    if (e.key === 'Escape') setShowQtyModal(false);
+                                }}
+                            />
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    onClick={() => setShowQtyModal(false)}
+                                    className="px-4 py-3 border border-gray-300 rounded text-gray-600 font-bold hover:bg-gray-100"
+                                >
+                                    CANCELAR
+                                </button>
+                                <button
+                                    onClick={confirmQuantity}
+                                    className="px-4 py-3 bg-[#285f94] text-white rounded font-bold hover:bg-[#1e4a74] shadow-md"
+                                >
+                                    CONFIRMAR
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Confirmation Modal */}
                 {showConfirmModal && (
                     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -407,29 +612,7 @@ const PickingAudit = () => {
                             <p className="mb-4 text-gray-700">Hay ítems con diferencias. ¿Desea finalizar con errores?</p>
                             <div className="flex justify-end gap-2">
                                 <button onClick={() => setShowConfirmModal(false)} className="btn-sap btn-secondary">Cancelar</button>
-                                <button onClick={() => { setShowConfirmModal(false); setShowPackagesModal(true); }} className="btn-sap btn-primary bg-yellow-500 border-yellow-600">Sí, Continuar</button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Packages Modal */}
-                {showPackagesModal && (
-                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                        <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
-                            <h3 className="text-lg font-bold mb-2">Cantidad de Bultos</h3>
-                            <p className="mb-2 text-gray-600">Ingrese total de paquetes:</p>
-                            <input
-                                type="number"
-                                value={packagesCount}
-                                onChange={e => setPackagesCount(e.target.value)}
-                                className="mb-4 text-center text-xl"
-                                autoFocus
-                                min="0"
-                            />
-                            <div className="flex justify-end gap-2">
-                                <button onClick={() => setShowPackagesModal(false)} className="btn-sap btn-secondary">Cancelar</button>
-                                <button onClick={() => prepareAssignment()} className="btn-sap btn-primary bg-blue-600 border-blue-700 text-white">Continuar</button>
+                                <button onClick={() => { setShowConfirmModal(false); setShowAssignmentModal(true); }} className="btn-sap btn-primary bg-yellow-500 border-yellow-600">Sí, Continuar</button>
                             </div>
                         </div>
                     </div>
@@ -446,6 +629,7 @@ const PickingAudit = () => {
                                 <table className="w-full text-sm border-collapse">
                                     <thead>
                                         <tr className="bg-gray-100">
+                                            <th className="p-2 text-left border w-16">Línea</th>
                                             <th className="p-2 text-left border">Item</th>
                                             <th className="p-2 text-center border w-24">Total Scan</th>
                                             {Array.from({ length: parseInt(packagesCount) || 1 }).map((_, i) => (
@@ -455,8 +639,9 @@ const PickingAudit = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {orderItems.map(item => {
-                                            const assignments = packageAssignments[item.code] || {};
+                                        {orderItems.map((item, idx) => {
+                                            const itemKey = `${item.code}:${item.order_line || ''}`;
+                                            const assignments = packageAssignments[itemKey] || {};
                                             const totalAssigned = Object.values(assignments).reduce((a, b) => a + b, 0);
                                             const isMatch = totalAssigned === item.qty_scan;
 
@@ -464,7 +649,8 @@ const PickingAudit = () => {
                                             if (item.qty_scan === 0) return null;
 
                                             return (
-                                                <tr key={item.code} className="border-b hover:bg-gray-50">
+                                                <tr key={idx} className="border-b hover:bg-gray-50">
+                                                    <td className="p-2 border text-center font-mono text-xs">{item.order_line}</td>
                                                     <td className="p-2 border font-medium">
                                                         {item.code}
                                                         <div className="text-xs text-gray-500 truncate max-w-xs">{item.description}</div>
@@ -477,7 +663,7 @@ const PickingAudit = () => {
                                                                 min="0"
                                                                 className="w-16 text-center border rounded p-1"
                                                                 value={assignments[i + 1] || 0}
-                                                                onChange={(e) => handleAssignmentChange(item.code, i + 1, e.target.value)}
+                                                                onChange={(e) => handleAssignmentChange(itemKey, i + 1, e.target.value)}
                                                                 onFocus={(e) => e.target.select()}
                                                             />
                                                         </td>
@@ -494,19 +680,25 @@ const PickingAudit = () => {
 
                             {/* Mobile View */}
                             <div className="block sm:hidden space-y-4">
-                                {orderItems.map(item => {
+                                {orderItems.map((item, idx) => {
                                     if (item.qty_scan === 0) return null;
 
-                                    const assignments = packageAssignments[item.code] || {};
+                                    const itemKey = `${item.code}:${item.order_line || ''}`;
+                                    const assignments = packageAssignments[itemKey] || {};
                                     const totalAssigned = Object.values(assignments).reduce((a, b) => a + b, 0);
                                     const isMatch = totalAssigned === item.qty_scan;
                                     const pkgCount = parseInt(packagesCount) || 1;
 
                                     return (
-                                        <div key={item.code} className="border border-gray-200 rounded-lg p-3 bg-gray-50">
-                                            <div className="mb-2">
-                                                <div className="font-bold text-gray-800">{item.code}</div>
-                                                <div className="text-xs text-gray-500 truncate">{item.description}</div>
+                                        <div key={idx} className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div>
+                                                    <div className="font-bold text-gray-800">{item.code}</div>
+                                                    <div className="text-xs text-gray-500 truncate">{item.description}</div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="text-[10px] font-mono text-gray-400">LÍNEA {item.order_line}</span>
+                                                </div>
                                             </div>
 
                                             <div className="flex justify-between items-center mb-3 text-sm">
@@ -529,9 +721,9 @@ const PickingAudit = () => {
                                                         <input
                                                             type="number"
                                                             min="0"
-                                                            className="w-full text-center border rounded p-2 text-lg font-bold bg-white focus:ring-2 focus:ring-blue-500"
+                                                            className="w-full text-center border rounded p-2 text-lg font-bold bg-white focus:ring-2 focus:ring-[#285f94]"
                                                             value={assignments[i + 1] || 0}
-                                                            onChange={(e) => handleAssignmentChange(item.code, i + 1, e.target.value)}
+                                                            onChange={(e) => handleAssignmentChange(itemKey, i + 1, e.target.value)}
                                                             onFocus={(e) => e.target.select()}
                                                         />
                                                     </div>
@@ -599,7 +791,7 @@ const PickingAudit = () => {
                         <button
                             onClick={loadTrackingData}
                             disabled={loadingTracking}
-                            className={`text-sm ${loadingTracking ? 'text-gray-400 cursor-not-allowed' : 'text-blue-600 hover:underline'}`}
+                            className={`text-sm ${loadingTracking ? 'text-gray-400 cursor-not-allowed' : 'text-[#285f94] hover:underline'}`}
                         >
                             {loadingTracking ? 'Actualizando...' : 'Actualizar'}
                         </button>
@@ -611,6 +803,7 @@ const PickingAudit = () => {
                                 <tr>
                                     <th className="py-2.5 px-3 font-semibold">Order</th>
                                     <th className="py-2.5 px-3 font-semibold">Despatch</th>
+                                    <th className="py-2.5 px-3 font-semibold">Cód. Cliente</th>
                                     <th className="py-2.5 px-3 font-semibold">Cliente</th>
                                     <th className="py-2.5 px-3 font-semibold text-center">Líneas</th>
                                     <th
@@ -650,8 +843,9 @@ const PickingAudit = () => {
                                                     </div>
                                                 </td>
                                                 <td>{t.despatch_number}</td>
+                                                <td>{t.customer_code}</td>
                                                 <td className="truncate max-w-[150px]">{t.customer_name}</td>
-                                                <td className="text-center font-bold text-blue-600">{t.total_lines}</td>
+                                                <td className="text-center font-bold text-[#285f94]">{t.total_lines}</td>
                                                 <td className="text-gray-500 text-xs">{t.print_date}</td>
                                             </tr>
                                         ))
@@ -675,11 +869,15 @@ const PickingAudit = () => {
                                 >
                                     <div className="flex justify-between items-center mb-1">
                                         <div className="flex items-center gap-2">
-                                            <span className={`font-bold ${t.is_audited ? 'text-slate-600' : 'text-blue-800'} text-lg`}>{t.order_number}</span>
+                                            <span className={`font-bold ${t.is_audited ? 'text-slate-600' : 'text-[#1e4a74]'} text-lg`}>{t.order_number}</span>
                                             <span className="text-xs font-mono text-gray-500 bg-white px-1.5 rounded border">{t.despatch_number}</span>
                                             {t.is_audited && <span className="text-[10px] bg-slate-400 text-white px-1 rounded uppercase">Auditado</span>}
                                         </div>
-                                        <span className={`${t.is_audited ? 'bg-slate-500' : 'bg-blue-600'} text-white text-xs font-bold px-2 py-0.5 rounded-full`}>{t.total_lines} líneas</span>
+                                        <span className={`${t.is_audited ? 'bg-slate-500' : 'bg-[#285f94]'} text-white text-xs font-bold px-2 py-0.5 rounded-full`}>{t.total_lines} líneas</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-[10px] font-bold text-slate-500 uppercase">Cliente:</span>
+                                        <span className="text-xs font-bold text-gray-700">{t.customer_code}</span>
                                     </div>
                                     <div className="text-sm text-gray-800 font-medium mb-2 truncate">{t.customer_name}</div>
                                     <div className="text-right text-xs text-gray-400">

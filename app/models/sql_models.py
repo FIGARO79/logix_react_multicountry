@@ -136,6 +136,7 @@ class PickingAudit(Base):
     order_number: Mapped[str] = mapped_column(String(100), nullable=False)
     despatch_number: Mapped[str] = mapped_column(String(100), nullable=False)
     customer_name: Mapped[Optional[str]] = mapped_column(String(255))
+    customer_code: Mapped[Optional[str]] = mapped_column(String(100))
     username: Mapped[str] = mapped_column(String(100), nullable=False)
     timestamp: Mapped[str] = mapped_column(String(50), nullable=False)
     status: Mapped[str] = mapped_column(String(50), nullable=False)

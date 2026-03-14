@@ -28,7 +28,6 @@ const PackingListPrint = lazy(() => import('./pages/PackingListPrint'));
 const CycleCountHistory = lazy(() => import('./pages/CycleCountHistory'));
 const ManageCountDifferences = lazy(() => import('./pages/ManageCountDifferences'));
 const ManageCycleCountDifferences = lazy(() => import('./pages/ManageCycleCountDifferences'));
-const WaybillGRN = lazy(() => import('./pages/WaybillGRN'));
 const Shipments = lazy(() => import('./pages/Shipments'));
 const ConsolidatedPackingList = lazy(() => import('./pages/ConsolidatedPackingList'));
 const DashboardInventario = lazy(() => import('./pages/DashboardInventario'));
@@ -103,7 +102,7 @@ function App() {
                         </ProtectedRoute>
                     }>
                         <Route path="/dashboard" element={<Dashboard />} />
-                        <Route path="/dashboard_inventario" element={
+                        <Route path="/inventory-dashboard" element={
                             <ProtectedRoute requiredPermission="inventory">
                                 <DashboardInventario />
                             </ProtectedRoute>
@@ -111,11 +110,6 @@ function App() {
                         <Route path="/inbound" element={
                             <ProtectedRoute requiredPermission="inbound">
                                 <Inbound />
-                            </ProtectedRoute>
-                        } />
-                        <Route path="/waybill-grn" element={
-                            <ProtectedRoute requiredPermission="inbound">
-                                <WaybillGRN />
                             </ProtectedRoute>
                         } />
                         <Route path="/label" element={<LabelPrinting />} />
