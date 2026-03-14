@@ -106,7 +106,7 @@ const Layout = () => {
 
                     {/* INVENTARIO (CONTEOS) */}
                     <div className="px-4 py-1 text-xs font-semibold text-white/50 uppercase tracking-wider">Inventario</div>
-                    <MenuItem to="/dashboard_inventario" icon={<ChartIcon />} label="Dashboard Inteligencia" onClick={toggleMenu} />
+                    <MenuItem to="/inventory-dashboard" icon={<ChartIcon />} label="Dashboard Inventario" onClick={toggleMenu} />
                     <MenuItem to="/planner" icon={<ChartIcon />} label="Plan Cíclico" onClick={toggleMenu} />
                     <MenuItem to="/view_counts/recordings" icon={<CheckSquareIcon />} label="Reporte Cíclicos" onClick={toggleMenu} />
                     <MenuItem to="/planner/manage_differences" icon={<ChecklistIcon />} label="Diferencias Cíclicos" onClick={toggleMenu} />

@@ -1,5 +1,5 @@
 """
-Router para endpoints administrativos.
+Router para endpoints administrativos unificado.
 """
 import json
 import os
@@ -19,15 +19,89 @@ from app.core.templates import templates
 from app.services.csv_handler import load_csv_data
 from app.utils.country import get_current_country
 
-router = APIRouter(prefix="/admin", tags=["admin_html"])
-api_router = APIRouter(prefix="/api/admin", tags=["admin_api"])
+# UNIFICADO: Todas las rutas administrativas colgarán de /api/admin
+router = APIRouter(prefix="/api/admin", tags=["admin"])
 
 def get_slotting_params_path(country_code: str) -> str:
     return os.path.join(JSON_FOLDER, country_code, 'slotting_parameters.json')
 
-# --- Endpoints de Slotting ---
+# --- Verificación de Sesión ---
 
-@api_router.get("/slotting-summary")
+@router.get('/verify')
+async def verify_admin_session(request: Request):
+    """Verifica si hay una sesión activa de administrador."""
+    if request.session.get("admin_logged_in"):
+        return JSONResponse({"success": True})
+    return JSONResponse({"success": False}, status_code=401)
+
+@router.post('/login')
+async def admin_login_api(request: Request, data: dict):
+    """Login de administrador."""
+    password = data.get('password')
+    target_pass = ADMIN_PASSWORD if ADMIN_PASSWORD else "Admin"
+    
+    if password == target_pass:
+        request.session['admin_logged_in'] = True
+        return JSONResponse(content={"message": "Login correcto", "success": True})
+    else:
+        return JSONResponse(content={"message": "Contraseña incorrecta", "success": False}, status_code=401)
+
+@router.post('/logout')
+async def admin_logout(request: Request):
+    """Cierra la sesión administrativa."""
+    request.session.pop("admin_logged_in", None)
+    return JSONResponse({"success": True})
+
+# --- Gestión de Usuarios ---
+
+@router.get('/users')
+async def get_admin_users_api(request: Request, db: AsyncSession = Depends(get_db)):
+    """Obtiene lista de usuarios."""
+    if not request.session.get("admin_logged_in"):
+        raise HTTPException(status_code=401, detail="No autorizado")
+    try:
+        users = await get_all_users(db)
+        return JSONResponse(content=users)
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@router.post('/approve/{user_id}')
+async def approve_user(user_id: int, request: Request, db: AsyncSession = Depends(get_db)):
+    if not request.session.get("admin_logged_in"):
+        raise HTTPException(status_code=401, detail="No autorizado")
+    success = await approve_user_by_id(db, user_id)
+    return JSONResponse({'success': success})
+
+@router.post('/delete/{user_id}')
+async def delete_user(user_id: int, request: Request, db: AsyncSession = Depends(get_db)):
+    if not request.session.get("admin_logged_in"):
+        raise HTTPException(status_code=401, detail="No autorizado")
+    success = await delete_user_by_id(db, user_id)
+    return JSONResponse({'success': success})
+
+@router.post('/reset_password/{user_id}')
+async def reset_password(request: Request, user_id: int, new_password: str = Form(...), db: AsyncSession = Depends(get_db)):
+    if not request.session.get("admin_logged_in"):
+        raise HTTPException(status_code=401, detail="No autorizado")
+    success = await reset_user_password(db, user_id, new_password)
+    return JSONResponse({'success': success})
+
+class PermissionUpdate(BaseModel):
+    permissions: List[str]
+
+@router.post('/permissions/{user_id}')
+async def update_user_permissions(user_id: int, request: Request, data: PermissionUpdate, db: AsyncSession = Depends(get_db)):
+    if not request.session.get("admin_logged_in"):
+        raise HTTPException(status_code=401, detail="No autorizado")
+    permissions_str = ",".join(data.permissions)
+    stmt = update(User).where(User.id == user_id).values(permissions=permissions_str)
+    await db.execute(stmt)
+    await db.commit()
+    return JSONResponse({'success': True})
+
+# --- Slotting ---
+
+@router.get("/slotting-summary")
 async def get_slotting_summary(request: Request, db: AsyncSession = Depends(get_db)):
     """Genera estadísticas reales cruzando el JSON con la DB."""
     if not request.session.get("admin_logged_in"):
@@ -96,258 +170,29 @@ async def get_slotting_summary(request: Request, db: AsyncSession = Depends(get_
         print(f"ERROR SUMMARY ({country}): {e}")
         return {"total": 0, "in_use": 0, "free": 0, "occupancy_pct": 0, "by_zone": {}}
 
-@api_router.get("/slotting-config")
+@router.get("/slotting-config")
 async def get_slotting_config(request: Request):
     if not request.session.get("admin_logged_in"):
         raise HTTPException(status_code=401, detail="No autorizado")
-    
     country = get_current_country(request) or "CL"
     params_path = get_slotting_params_path(country)
-    
     if not os.path.exists(params_path): return {"turnover": {}, "storage": {}}
     with open(params_path, 'r') as f: return json.load(f)
 
-@api_router.post("/slotting-config")
+@router.post("/slotting-config")
 async def update_slotting_config(request: Request, data: dict = Body(...)):
     if not request.session.get("admin_logged_in"):
         raise HTTPException(status_code=401, detail="No autorizado")
-    
     country = get_current_country(request) or "CL"
     params_path = get_slotting_params_path(country)
     os.makedirs(os.path.dirname(params_path), exist_ok=True)
-    
     with open(params_path, 'w') as f: json.dump(data, f, indent=4)
     return {"message": "Guardado"}
 
-@api_router.get("/slotting-template")
-async def get_slotting_template(request: Request):
-    if not request.session.get("admin_logged_in"):
-        raise HTTPException(status_code=401, detail="No autorizado")
-    
-    country = get_current_country(request) or "CL"
-    params_path = get_slotting_params_path(country)
-    
-    data_list = []
-    try:
-        if os.path.exists(params_path):
-            with open(params_path, 'r') as f:
-                storage = json.load(f).get('storage', {})
-                for b, i in storage.items():
-                    data_list.append({"BIN": b, "ZONA": i.get('zone',''), "PASILLO": i.get('aisle',''), "NIVEL": i.get('level',0), "SPOT": i.get('spot','')})
-    except: pass
-    df = pd.DataFrame(data_list if data_list else [{"BIN":"EJM"}]).sort_values(by="BIN")
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer: df.to_excel(writer, index=False)
-    output.seek(0)
-    return Response(content=output.getvalue(), media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', headers={"Content-Disposition": f"attachment; filename=layout_{country}.xlsx"})
-
-@api_router.post("/slotting-upload")
-async def upload_slotting_config(request: Request, file: UploadFile = File(...)):
-    if not request.session.get("admin_logged_in"):
-        raise HTTPException(status_code=401, detail="No autorizado")
-    
-    country = get_current_country(request) or "CL"
-    params_path = get_slotting_params_path(country)
-    
-    try:
-        df = pd.read_excel(BytesIO(await file.read()))
-        new_storage = {}
-        for _, r in df.iterrows():
-            b = str(r.get("BIN", "")).strip().upper()
-            if b and b.lower() != "nan":
-                new_storage[b] = {
-                    "zone": str(r.get("ZONA", "")), 
-                    "aisle": str(r.get("PASILLO", "")), 
-                    "level": int(r.get("NIVEL", 0)), 
-                    "spot": str(r.get("SPOT", "Cold")).capitalize()
-                }
-        
-        current_config = {"turnover": {}, "storage": {}}
-        if os.path.exists(params_path):
-            with open(params_path, 'r') as f:
-                current_config = json.load(f)
-        
-        current_config["storage"] = new_storage
-        os.makedirs(os.path.dirname(params_path), exist_ok=True)
-        with open(params_path, 'w') as f: json.dump(current_config, f, indent=4)
-        
-        return {"message": f"Layout para {country} actualizado con {len(new_storage)} ubicaciones."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# --- End de Endpoints de Slotting ---
-
-@router.get('/login', response_class=HTMLResponse, name='admin_login_get')
-async def admin_login_get(request: Request):
-    """Página de login de administrador."""
-    return templates.TemplateResponse('admin_login.html', {'request': request})
-
-
-@router.post('/login', response_class=HTMLResponse, name='admin_login_post')
-async def admin_login_post(request: Request, password: str = Form(...)):
-    """Procesa el login de administrador."""
-    if password == ADMIN_PASSWORD:
-        request.session['admin_logged_in'] = True
-        response = RedirectResponse(url='/admin/users', status_code=302)
-        return response
-    else:
-        return templates.TemplateResponse('admin_login.html', {
-            'request': request,
-            'error': 'Contraseña incorrecta.'
-        })
-
-
-@router.get('/users', response_class=HTMLResponse, name='admin_users_get')
-async def admin_users_get(request: Request, db: AsyncSession = Depends(get_db)):
-    """Página de gestión de usuarios."""
-    if not request.session.get("admin_logged_in"):
-        return RedirectResponse(url='/admin/login', status_code=302)
-    
-    users = await get_all_users(db)
-    return templates.TemplateResponse('admin_users.html', {
-        'request': request,
-        'users': users
-    })
-
-
-@router.post('/system/reload-data', name='admin_reload_data')
+@router.post("/system/reload-data")
 async def admin_reload_data(request: Request):
-    """Endpoint para recargar los datos CSV en memoria (Hot Reload)."""
-    if not request.session.get("admin_logged_in"):
-        raise HTTPException(status_code=403, detail="No autorizado.")
-    
-    country = get_current_country(request) or "CL"
-    await load_csv_data(country_code=country)
-    return JSONResponse({'message': f'Datos CSV para {country} recargados correctamente en memoria.'})
-
-
-@router.post('/approve/{user_id}')
-async def approve_user(user_id: int, request: Request, db: AsyncSession = Depends(get_db)):
-    """Aprueba un usuario."""
-    if not request.session.get("admin_logged_in"):
-        raise HTTPException(status_code=403, detail="No autorizado.")
-    
-    success = await approve_user_by_id(db, user_id)
-    if success:
-        return JSONResponse({'message': f'Usuario {user_id} aprobado.'})
-    raise HTTPException(status_code=500, detail="Error al aprobar usuario.")
-
-
-@router.post('/delete/{user_id}')
-async def delete_user(user_id: int, request: Request, db: AsyncSession = Depends(get_db)):
-    """Elimina un usuario."""
-    if not request.session.get("admin_logged_in"):
-        raise HTTPException(status_code=403, detail="No autorizado.")
-    
-    success = await delete_user_by_id(db, user_id)
-    if success:
-        return JSONResponse({'message': f'Usuario {user_id} eliminado.'})
-    raise HTTPException(status_code=404, detail="Usuario no encontrado.")
-
-
-@router.post('/reset_password/{user_id}')
-async def reset_password(request: Request, user_id: int, new_password: str = Form(...), db: AsyncSession = Depends(get_db)):
-    """Restablece la contraseña de un usuario."""
-    if not request.session.get("admin_logged_in"):
-        raise HTTPException(status_code=403, detail="No autorizado.")
-    
-    success = await reset_user_password(db, user_id, new_password)
-    if success:
-        return JSONResponse({'message': f'Contraseña del usuario {user_id} restablecida.'})
-    raise HTTPException(status_code=500, detail="Error al restablecer contraseña.")
-
-
-
-# ===== APIs FOR REACT ADMIN =====
-
-@api_router.post('/system/reload-data')
-async def admin_reload_data_api(request: Request):
-    """API: Recarga datos CSV (Hot Reload)."""
-    if not request.session.get("admin_logged_in"):
-        raise HTTPException(status_code=403, detail="No autorizado.")
-    country = get_current_country(request) or "CL"
-    await load_csv_data(country_code=country)
-    return JSONResponse({'message': f'Datos CSV para {country} recargados correctamente en memoria.'})
-@api_router.post('/approve/{user_id}')
-async def approve_user_api(user_id: int, request: Request, db: AsyncSession = Depends(get_db)):
-    """API: Aprueba un usuario."""
-    if not request.session.get("admin_logged_in"):
-        raise HTTPException(status_code=403, detail="No autorizado.")
-    
-    success = await approve_user_by_id(db, user_id)
-    if success:
-        return JSONResponse({'message': f'Usuario {user_id} aprobado.'})
-    raise HTTPException(status_code=500, detail="Error al aprobar usuario.")
-
-@api_router.post('/delete/{user_id}')
-async def delete_user_api(user_id: int, request: Request, db: AsyncSession = Depends(get_db)):
-    """API: Elimina un usuario."""
-    if not request.session.get("admin_logged_in"):
-        raise HTTPException(status_code=403, detail="No autorizado.")
-    
-    success = await delete_user_by_id(db, user_id)
-    if success:
-        return JSONResponse({'message': f'Usuario {user_id} eliminado.'})
-    raise HTTPException(status_code=404, detail="Usuario no encontrado.")
-
-@api_router.post('/reset_password/{user_id}')
-async def reset_password_api(request: Request, user_id: int, new_password: str = Form(...), db: AsyncSession = Depends(get_db)):
-    """API: Restablece contraseña."""
-    if not request.session.get("admin_logged_in"):
-        raise HTTPException(status_code=403, detail="No autorizado.")
-    
-    success = await reset_user_password(db, user_id, new_password)
-    if success:
-        return JSONResponse({'message': f'Contraseña del usuario {user_id} restablecida.'})
-    raise HTTPException(status_code=500, detail="Error al restablecer contraseña.")
-
-class PermissionUpdate(BaseModel):
-    permissions: List[str]
-
-@api_router.post('/permissions/{user_id}')
-async def update_user_permissions(user_id: int, request: Request, data: PermissionUpdate, db: AsyncSession = Depends(get_db)):
-    """API: Actualiza los permisos de un usuario."""
-    if not request.session.get("admin_logged_in"):
-        raise HTTPException(status_code=403, detail="No autorizado.")
-    
-    permissions_list = data.permissions
-    permissions_str = ",".join(permissions_list)
-    
-    stmt = update(User).where(User.id == user_id).values(permissions=permissions_str)
-    result = await db.execute(stmt)
-    await db.commit()
-    
-    return JSONResponse({'message': f'Permisos actualizados para usuario {user_id}'})
-
-
-# ===== APIs FOR REACT ADMIN =====
-
-# ===== APIs FOR REACT ADMIN =====
-
-@api_router.get('/users')
-async def get_admin_users_api(request: Request, db: AsyncSession = Depends(get_db)):
-    """API: Obtiene lista de usuarios."""
     if not request.session.get("admin_logged_in"):
         raise HTTPException(status_code=401, detail="No autorizado")
-    
-    try:
-        users = await get_all_users(db)
-        # get_all_users returns a list of dictionaries (from .to_dict())
-        # Debug logging
-        print(f"DEBUG: get_admin_users_api returning {len(users)} users")
-        return JSONResponse(content=users)
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return JSONResponse(content={"error": str(e), "detail": traceback.format_exc()}, status_code=500)
-
-@api_router.post('/login')
-async def admin_login_api(request: Request, data: dict):
-    """API: Login de administrador."""
-    password = data.get('password')
-    if password == ADMIN_PASSWORD:
-        request.session['admin_logged_in'] = True
-        return JSONResponse(content={"message": "Login correcto", "success": True})
-    else:
-        return JSONResponse(content={"message": "Contraseña incorrecta", "success": False}, status_code=401)
-
+    country = get_current_country(request) or "CL"
+    await load_csv_data(country_code=country)
+    return JSONResponse({'message': f'Datos para {country} recargados.'})

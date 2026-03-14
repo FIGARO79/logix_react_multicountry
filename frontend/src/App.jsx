@@ -81,6 +81,24 @@ const ProtectedRoute = ({ children, requiredPermission }) => {
     return children;
 };
 
+// Admin Protected Route Component
+const AdminProtectedRoute = ({ children }) => {
+    const [isVerified, setIsVerified] = React.useState(null);
+
+    React.useEffect(() => {
+        fetch('/api/admin/verify', { credentials: 'include' })
+            .then(res => {
+                if (res.ok) setIsVerified(true);
+                else setIsVerified(false);
+            })
+            .catch(() => setIsVerified(false));
+    }, []);
+
+    if (isVerified === null) return <LoadingFallback />;
+    if (isVerified === false) return <Navigate to="/admin/login" replace />;
+    return children;
+};
+
 function App() {
     return (
         <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
@@ -193,9 +211,21 @@ function App() {
 
                         {/* Admin Routes */}
                         <Route path="/admin/login" element={<AdminLogin />} />
-                        <Route path="/admin/users" element={<AdminUsers />} />
-                        <Route path="/admin/inventory" element={<AdminInventory />} />
-                        <Route path="/admin/slotting" element={<SlottingConfig />} />
+                        <Route path="/admin/users" element={
+                            <AdminProtectedRoute>
+                                <AdminUsers />
+                            </AdminProtectedRoute>
+                        } />
+                        <Route path="/admin/inventory" element={
+                            <AdminProtectedRoute>
+                                <AdminInventory />
+                            </AdminProtectedRoute>
+                        } />
+                        <Route path="/admin/slotting" element={
+                            <AdminProtectedRoute>
+                                <SlottingConfig />
+                            </AdminProtectedRoute>
+                        } />
                         <Route path="/shipments" element={
                             <ProtectedRoute requiredPermission="picking">
                                 <Shipments />
