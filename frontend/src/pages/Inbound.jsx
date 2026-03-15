@@ -74,6 +74,19 @@ const Inbound = () => {
         } catch (e) { console.error(e); }
     };
 
+    const handleLookupReference = async (type, value) => {
+        if (!value || editId) return;
+        try {
+            const params = type === 'waybill' ? `waybill=${encodeURIComponent(value)}` : `import_ref=${encodeURIComponent(value)}`;
+            const res = await fetch(`/api/inbound/lookup_reference?${params}`, { credentials: 'include' });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.waybill && !waybill) setWaybill(data.waybill);
+                if (data.import_ref && !importRef) setImportRef(data.import_ref);
+            }
+        } catch (e) { console.error("Error lookup", e); }
+    };
+
     const findItem = async () => {
         if (!itemCode || !importRef) {
             alert("Ingrese Import Reference e Item Code");
@@ -382,11 +395,17 @@ const Inbound = () => {
                             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-4">
                                 <div>
                                     <label className="form-label">Import Reference</label>
-                                    <input type="text" value={importRef} onChange={e => setImportRef(e.target.value.toUpperCase())} placeholder="I.R." required disabled={!!editId} />
+                                    <input type="text" value={importRef} 
+                                        onChange={e => setImportRef(e.target.value.toUpperCase())} 
+                                        onBlur={e => handleLookupReference('import_ref', e.target.value)}
+                                        placeholder="I.R." required disabled={!!editId} />
                                 </div>
                                 <div>
                                     <label className="form-label">Waybill</label>
-                                    <input type="text" value={waybill} onChange={e => setWaybill(e.target.value.toUpperCase())} placeholder="W.B." required />
+                                    <input type="text" value={waybill} 
+                                        onChange={e => setWaybill(e.target.value.toUpperCase())} 
+                                        onBlur={e => handleLookupReference('waybill', e.target.value)}
+                                        placeholder="W.B." required />
                                 </div>
                                 <div className="sm:col-span-2">
                                     <label className="form-label">Item Code</label>

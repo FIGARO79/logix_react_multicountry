@@ -128,35 +128,75 @@ async def process_po_extractor(country_code: str):
         print(f"📑 [{country_code}] Procesando PO Extractor...")
         df = await run_in_threadpool(pd.read_excel, excel_path, engine='openpyxl')
         
-        # Normalizar columnas
+        # Normalizar columnas (limpieza robusta)
         df.columns = [str(c).strip().upper() for c in df.columns]
-        ir_col = 'IMPORT_REFERENCE' if 'IMPORT_REFERENCE' in df.columns else 'IMPORT REFERENCE'
-        grn_col = 'GRN_NUMBER' if 'GRN_NUMBER' in df.columns else 'GRN NUMBER'
-        wb_col = 'WAYBILL' if 'WAYBILL' in df.columns else 'WAYBILL NUMBER'
-        item_col = 'ITEM_CODE' if 'ITEM_CODE' in df.columns else 'ITEM CODE'
+        
+        # Identificar columnas por nombres posibles
+        ir_col = next((c for c in df.columns if c in ['IMPORT_REFERENCE', 'IMPORT REFERENCE', 'IMPORT REF CODE']), None)
+        grn_col = next((c for c in df.columns if c in ['GRN_NUMBER', 'GRN NUMBER']), None)
+        wb_col = next((c for c in df.columns if c in ['WAYBILL', 'WAYBILL NUMBER']), None)
+        item_col = next((c for c in df.columns if c in ['ITEM_CODE', 'ITEM CODE']), None)
+        qty_col = next((c for c in df.columns if c in ['DESPATCHED_QTY', 'DESPATCHED QTY', 'QUANTITY']), None)
 
-        ir_to_data = {}
-        for _, row in df.iterrows():
-            ir = str(row.get(ir_col, "")).strip().upper()
-            if not ir or ir == 'NAN': continue
+        if not ir_col or not wb_col:
+            print(f"⚠️ [{country_code}] Faltan columnas críticas en PO Extractor (IR: {ir_col}, WB: {wb_col})")
+            return
+
+        # Limpiar datos
+        df = df.fillna("")
+        df[ir_col] = df[ir_col].astype(str).str.strip().str.upper()
+        df[wb_col] = df[wb_col].astype(str).str.strip().str.upper()
+        
+        # Filtrar vacíos
+        df = df[(df[ir_col] != "") & (df[wb_col] != "") & (df[ir_col] != "NAN") & (df[wb_col] != "NAN")]
+
+        ir_lookup = {}
+        wb_lookup = {}
+
+        # Generar ir_to_data
+        for ir, group in df.groupby(ir_col):
+            first_row = group.iloc[0]
+            items_list = []
+            for _, row in group.iterrows():
+                item_info = {"item_code": str(row.get(item_col, "")).strip().upper()}
+                if grn_col: item_info["grn"] = str(row.get(grn_col, "")).replace('.0', '').strip().upper()
+                if qty_col: item_info["qty"] = str(row.get(qty_col, ""))
+                items_list.append(item_info)
             
-            if ir not in ir_to_data:
-                ir_to_data[ir] = {
-                    "waybill": str(row.get(wb_col, "")),
-                    "items": []
-                }
+            ir_lookup[ir] = {
+                "waybill": str(first_row[wb_col]),
+                "items": items_list
+            }
+
+        # Generar wb_to_data
+        for wb, group in df.groupby(wb_col):
+            first_row = group.iloc[0]
+            items_list = []
+            for _, row in group.iterrows():
+                item_info = {"item_code": str(row.get(item_col, "")).strip().upper()}
+                if grn_col: item_info["grn"] = str(row.get(grn_col, "")).replace('.0', '').strip().upper()
+                if qty_col: item_info["qty"] = str(row.get(qty_col, ""))
+                items_list.append(item_info)
             
-            ir_to_data[ir]["items"].append({
-                "item_code": str(row.get(item_col, "")).strip().upper(),
-                "grn": str(row.get(grn_col, "")).replace('.0', '').strip().upper()
-            })
+            wb_lookup[wb] = {
+                "import_ref": str(first_row[ir_col]),
+                "items": items_list
+            }
+
+        lookup_data = {
+            "wb_to_data": wb_lookup,
+            "ir_to_data": ir_lookup,
+            "updated_at": datetime.datetime.now().isoformat()
+        }
 
         with open(json_path, 'w', encoding='utf-8') as f:
-            json.dump({"ir_to_data": ir_to_data}, f, indent=4)
-        print(f"✅ [{country_code}] po_lookup.json generado.")
+            json.dump(lookup_data, f, indent=4)
+        print(f"✅ [{country_code}] po_lookup.json generado con mapas cruzados.")
         
     except Exception as e:
+        import traceback
         print(f"⚠️ Error procesando PO Extractor ({country_code}): {e}")
+        print(traceback.format_exc())
 
 async def load_grn_data_optimized(country_code: str):
     global df_grn_cache, grn_file_mtime

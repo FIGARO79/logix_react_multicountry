@@ -15,7 +15,97 @@ import openpyxl
 from openpyxl.utils import get_column_letter
 from fastapi.responses import Response
 
+import json
+import os
+import gc
+from app.utils.country import get_current_country, get_country_csv_path
+from app.core.config import DATABASE_FOLDER
+
 router = APIRouter(prefix="/api/inbound", tags=["inbound"])
+
+@router.get("/lookup_reference")
+async def lookup_reference(
+    request: Request,
+    waybill: Optional[str] = None,
+    import_ref: Optional[str] = None,
+    user: str = Depends(permission_required("inbound"))
+):
+    if not waybill and not import_ref:
+        return {"waybill": "", "import_ref": ""}
+    
+    country = get_current_country(request) or "CL"
+    # Reutilizar lógica de construcción de ruta de csv_handler (static/json/{country}/{filename})
+    from app.core.config import JSON_FOLDER
+    cache_path = os.path.join(JSON_FOLDER, country, "po_lookup.json")
+    file_path = get_country_csv_path(DATABASE_FOLDER, 'Purchase Order Extractor.xlsx', country)
+    
+    result = {"waybill": waybill or "", "import_ref": import_ref or ""}
+
+    # INTENTO 1: USAR CACHÉ JSON (Ultrarrápido)
+    if os.path.exists(cache_path):
+        try:
+            with open(cache_path, "r", encoding="utf-8") as f:
+                cache = json.load(f)
+            
+            if waybill:
+                val = waybill.strip().upper()
+                # Intentar buscar en wb_to_data (si existe) o iterar ir_to_data
+                data = cache.get("wb_to_data", {}).get(val)
+                if data:
+                    result["import_ref"] = data.get("import_ref", result["import_ref"])
+                else:
+                    # Fallback: iterar ir_to_data (compatibilidad con caché actual de multicountry)
+                    ir_to_data = cache.get("ir_to_data", {})
+                    for ir, info in ir_to_data.items():
+                        if str(info.get("waybill", "")).strip().upper() == val:
+                            result["import_ref"] = ir
+                            break
+            elif import_ref:
+                val = import_ref.strip().upper()
+                data = cache.get("ir_to_data", {}).get(val)
+                if data:
+                    result["waybill"] = data.get("waybill", result["waybill"])
+            
+            return result
+        except Exception as e:
+            print(f"Error reading JSON cache: {e}")
+
+    # INTENTO 2: FALLBACK AL EXCEL (Si no hay caché o no se encontró)
+    if not os.path.exists(file_path):
+        return result
+
+    try:
+        # Intentar leer el Excel directamente (lento pero seguro)
+        # Usar engine='openpyxl' para archivos .xlsx
+        df = pd.read_excel(file_path, engine='openpyxl')
+        
+        # Normalizar columnas
+        df.columns = [str(c).strip().upper() for c in df.columns]
+        
+        # Identificar columnas por nombres posibles
+        ir_col = next((c for c in df.columns if c in ['IMPORT_REFERENCE', 'IMPORT REFERENCE', 'IMPORT REF CODE']), None)
+        wb_col = next((c for c in df.columns if c in ['WAYBILL', 'WAYBILL NUMBER']), None)
+
+        if not ir_col or not wb_col:
+            return result
+
+        if waybill:
+            val = waybill.strip().upper()
+            match = df[df[wb_col].astype(str).str.strip().str.upper() == val]
+            if not match.empty:
+                result["import_ref"] = str(match.iloc[0][ir_col])
+        elif import_ref:
+            val = import_ref.strip().upper()
+            match = df[df[ir_col].astype(str).str.strip().str.upper() == val]
+            if not match.empty:
+                result["waybill"] = str(match.iloc[0][wb_col])
+        
+        del df
+        gc.collect()
+        return result
+    except Exception as e:
+        print(f"Error reading Excel fallback: {e}")
+        return result
 
 # --- Schemas ---
 class AddLogRequest(BaseModel):
