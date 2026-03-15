@@ -1,5 +1,10 @@
 import os
 import time
+
+# Asegurar que Playwright encuentre los browsers instalados
+os.environ.setdefault('PLAYWRIGHT_BROWSERS_PATH', '/home/debian/.cache/ms-playwright')
+os.environ.setdefault('HOME', '/home/debian')
+
 from playwright.sync_api import sync_playwright
 from app.core.config import PO_EXTRACTOR_EXCEL_PATH
 

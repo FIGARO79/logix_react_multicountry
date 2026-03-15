@@ -85,8 +85,11 @@ app.add_middleware(
 # [5] Capa de Depuración (Outer-most / La más externa)
 @app.middleware("http")
 async def error_logging_middleware(request: Request, call_next):
+    print(f"DEBUG: Incoming request {request.method} {request.url}")
     try:
-        return await call_next(request)
+        response = await call_next(request)
+        print(f"DEBUG: Response status {response.status_code} for {request.method} {request.url}")
+        return response
     except Exception as e:
         import traceback
         # No loguear errores de iconos favicon faltantes para no ensuciar la consola

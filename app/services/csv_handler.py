@@ -1,5 +1,6 @@
 import os
 import json
+import datetime
 import pandas as pd
 import numpy as np
 from starlette.concurrency import run_in_threadpool
@@ -251,7 +252,7 @@ async def load_grn_data_optimized(country_code: str):
 
 async def reload_cache_if_needed(country_code: str = "CL"):
     """
-    Verifica si los archivos CSV cambiaron para un país determinado.
+    Verifica si los archivos CSV o el Excel cambiaron para un país determinado.
     """
     global grn_file_mtime, master_file_mtime
     
@@ -266,12 +267,12 @@ async def reload_cache_if_needed(country_code: str = "CL"):
     
     item_master_path = get_country_csv_path(DATABASE_FOLDER, 'AURRSGLBD0250.csv', country_code)
     grn_csv_path = get_country_csv_path(DATABASE_FOLDER, 'AURRSGLBD0280.csv', country_code)
+    excel_path = get_country_csv_path(DATABASE_FOLDER, 'Purchase Order Extractor.xlsx', country_code)
     
     need_reload = False
     
     if os.path.exists(item_master_path):
         mtime = os.path.getmtime(item_master_path)
-        # Si no está en memoria o el archivo cambió, recargar
         if master_file_mtime.get(country_code) is None or mtime != master_file_mtime.get(country_code):
             need_reload = True
         master_file_mtime[country_code] = mtime
@@ -281,9 +282,20 @@ async def reload_cache_if_needed(country_code: str = "CL"):
         if grn_file_mtime.get(country_code) is None or mtime != grn_file_mtime.get(country_code):
             need_reload = True
         grn_file_mtime[country_code] = mtime
+
+    # Detectar cambios en el Excel de PO Extractor
+    excel_mtime_key = f'_excel_mtime_{country_code}'
+    if os.path.exists(excel_path):
+        excel_mtime = os.path.getmtime(excel_path)
+        last_excel_mtime = getattr(reload_cache_if_needed, excel_mtime_key, None)
+        if last_excel_mtime is None or excel_mtime != last_excel_mtime:
+            setattr(reload_cache_if_needed, excel_mtime_key, excel_mtime)
+            print(f"🔄 [{country_code}] Excel actualizado, regenerando po_lookup.json...")
+            await process_po_extractor(country_code)
     
     if need_reload:
         await load_csv_data(country_code)
+
 
 
 

@@ -49,14 +49,20 @@ async def verify_user(db: AsyncSession, username: str, password: str, country_co
     Verifica las credenciales del usuario.
     Devuelve una tupla: (True/False si es válido, 'approved'/'pending'/'invalid' como estado).
     """
+    print(f"DEBUG: verify_user attempt for username='{username}', country_code='{country_code}'")
     result = await db.execute(select(User).where(User.username == username, User.country_code == country_code))
     user = result.scalar_one_or_none()
 
-    if user and check_password_hash(user.password_hash, password):
-        if user.is_approved == 1:
-            return True, "approved"
-        else:
-            return True, "pending"
+    if user:
+        is_valid = check_password_hash(user.password_hash, password)
+        print(f"DEBUG: User found. ID={user.id}, Approved={user.is_approved}, Password Valid={is_valid}")
+        if is_valid:
+            if user.is_approved == 1:
+                return True, "approved"
+            else:
+                return True, "pending"
+    else:
+        print(f"DEBUG: No user found with username='{username}' and country_code='{country_code}'")
     return False, "invalid"
 
 def is_strong_password(password: str) -> bool:
