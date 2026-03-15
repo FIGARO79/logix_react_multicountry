@@ -129,3 +129,7 @@ app.include_router(integrations.router)
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "version": "2.1.0"}
+
+if __name__ == "__main__":
+    import granian
+    granian.Granian("main:app", address="127.0.0.1", port=8000, reload=True).serve()

@@ -172,7 +172,7 @@ const LabelPrinting = () => {
             <body>
                 <div class="label-container">
                     <!-- Logo -->
-                    <img src="/static/images/logoytpe_sandvik.png" alt="Sandvik" class="label-logo" />
+                    <img src="/static/images/logotype_sandvik.png" alt="Sandvik" class="label-logo" />
                     
                     <!-- Header -->
                     <div class="label-item-code">${itemData?.itemCode || ''}</div>
@@ -308,7 +308,7 @@ const LabelPrinting = () => {
                             fontFamily: 'Arial, sans-serif'
                         }}>
                             {/* Logo */}
-                            <img src="/static/images/logoytpe_sandvik.png" alt="Sandvik" style={{ height: '7mm', display: 'block', marginBottom: '3.5mm' }} />
+                            <img src="/static/images/logotype_sandvik.png" alt="Sandvik" style={{ height: '7mm', display: 'block', marginBottom: '3.5mm' }} />
 
                             {/* Header */}
                             <div style={{ fontSize: '12pt', fontWeight: 'bold', lineHeight: 1.2 }}>{itemData?.itemCode || 'ITEM CODE'}</div>

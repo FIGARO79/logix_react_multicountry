@@ -28,8 +28,8 @@ fi
 
 # 2. Iniciar Backend (Granian)
 echo -e "${GREEN}[BACKEND] Iniciando API con Granian en http://127.0.0.1:8000 ...${NC}"
-# --reload permite autorrecarga al modificar código
-$VENV_PATH/bin/python -m granian --interface asgi --host 127.0.0.1 --port 8000 --reload main:app &
+# --reload ha sido removido porque requiere la dependencia granian[reload] extra
+$VENV_PATH/bin/python -m granian --interface asgi --host 127.0.0.1 --port 8000 main:app &
 BACKEND_PID=$!
 
 # 3. Iniciar Frontend

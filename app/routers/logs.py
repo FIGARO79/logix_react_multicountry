@@ -12,7 +12,9 @@ from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import get_db
 from app.models.schemas import LogEntry
-from app.services import db_logs, csv_handler, slotting_service, ai_slotting
+from app.services import db_logs, csv_handler
+from app.services.slotting_service import slotting_service
+from app.services.ai_slotting import ai_slotting
 from app.utils.auth import login_required, permission_required, api_login_required
 from app.utils.country import get_current_country
 from app.core.config import ASYNC_DB_URL

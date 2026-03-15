@@ -6,14 +6,14 @@ After=network.target
 # IMPORTANTE: Cambia 'tu_usuario' por el usuario linux real (ej. 'ubuntu', 'root', 'fabio')
 User=debian
 Group=www-data
-WorkingDirectory=/var/www/logix
+WorkingDirectory=/home/debian/logix_tenancy
 
 # Cargar variables de entorno desde archivo .env
-EnvironmentFile=/var/www/logix/.env
+EnvironmentFile=/home/debian/logix_tenancy/.env
 
 # Variables extra si son necesarias (PATH suele requerirse explícitamente)
-Environment="PATH=/var/www/logix/venv/bin:/usr/local/bin:/usr/bin:/bin"
-ExecStart=/var/www/logix/venv/bin/granian --interface asgi main:app --host 0.0.0.0 --port 8000 --workers 2
+Environment="PATH=/home/debian/logix_tenancy/venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/home/debian/logix_tenancy/venv/bin/granian --interface asgi main:app --host 0.0.0.0 --port 8000 --workers 2
 
 [Install]
 WantedBy=multi-user.target
